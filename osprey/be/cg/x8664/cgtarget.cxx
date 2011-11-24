@@ -4121,6 +4121,15 @@ CGTARG_Check_OP_For_HB_Suitability(OP *op)
 
 TN* CGTARG_Gen_Dedicated_Subclass_TN( OP* op, int idx, BOOL is_result )
 {
+  // If idx is out of fixed number of operands or results, there is no 
+  // register set info in the targ_info for the op. In this case, return 
+  // tn if it is dedicated.
+  int opnd_result_cnt = is_result ? OP_fixed_results(op) : OP_fixed_opnds(op);
+  if (idx >= opnd_result_cnt) {
+    TN* tn = is_result ? OP_result( op, idx ) : OP_opnd( op, idx );
+    return TN_is_dedicated(tn) ? tn : NULL;
+  }
+
   const ISA_REGISTER_SUBCLASS subclass = is_result ?
     OP_result_reg_subclass( op, idx ) : OP_opnd_reg_subclass( op, idx );
   const REGISTER_SET subclass_regs = REGISTER_SUBCLASS_members(subclass);
