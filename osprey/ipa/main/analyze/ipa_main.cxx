@@ -87,6 +87,8 @@ extern void (*Preprocess_struct_access_p)(void);
 
 #include "ipa_nystrom_alias_analyzer.h"
 
+#include "ipa_pcg.h"
+
 FILE* STDOUT = stdout; 
 
 //-----------------------------------------------------------------------
@@ -759,6 +761,12 @@ Perform_Interprocedural_Analysis() { // ipa/main/analyze/ipa_main.cxx
           IPA_Preoptimize(node);
         }
       }
+    }
+
+    if (IPA_Enable_Siloed_Ref) {
+    	IPA_Concurrency_Graph = CXX_NEW(IPA_PCG(IPA_Call_Graph, Malloc_Mem_Pool),
+    			Malloc_Mem_Pool);
+    	IPA_Concurrency_Graph->Collect_siloed_references();
     }
 
     MEM_POOL_Pop (MEM_local_nz_pool_ptr);
