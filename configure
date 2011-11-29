@@ -1615,6 +1615,21 @@ case "$target" in
 		GCC_CONFIGURE_CFLAGS+=" -DTARG_IA64"
 		TARG_INFO_NAME=ipfec_targ_info
 		;;
+	powerpc-*-linux*)
+		MACHINE_TYPE=PPC32
+		BUILD_ABI=I32BIT
+		BUILD_ARCH=IA32
+		BUILD_HOST=IA32
+		BUILD_TARGET=PPC32
+		BUILD_MULTILIB=NO
+		BUILD_VENDOR=OSP
+		GCC_CONFIGURE_TARG=powerpc-redhat-linux
+		GCC_CONFIGURE_HOST=powerpc-redhat-linux
+		GCC_CONFIGURE_BUILD=powerpc-redhat-linux
+		CYGNUS_CONFIGURE_TARG=mipsel-elf-linux
+		GCC_CONFIGURE_CFLAGS+=" -DTARG_PPC32"
+		GCC_CONFIGURE_COMPILER+=" -m32"
+		;;
 	sl*-*-linux*)
 		MACHINE_TYPE=SL
 		BUILD_TARGET=SL
@@ -1639,6 +1654,12 @@ esac
 if test "${BUILD_TARGET}" = "SL"; then
    BUILD_GNU3="YES"
    BUILD_FORTRAN="NO"
+fi
+
+if test "${BUILD_TARGET}" = "PPC32"; then
+   BUILD_GNU3="NO"
+   BUILD_FORTRAN="NO"
+   BUILD_SKIP_IPA="NO"
 fi
 
 UNAME_MACHINE=`uname -m`

@@ -3542,7 +3542,7 @@ static WN *lower_cvt(WN *block, WN *tree, LOWER_ACTIONS actions)
       WN_INSERT_BlockLast(elseblock, iwn);
 
       WN* ifstmt = WN_CreateIf(test, thenblock, elseblock);
-      WN_INSERT_BlockLast(block, lower_if(block, ifstmt, actions));
+      WN_INSERT_BlockLast(block, lower_if(block, ifstmt, actions, NULL));
 
       iwn = WN_LdidPreg(dst, cvt_result);
     }
@@ -6957,7 +6957,7 @@ static WN *lower_expr(WN *block, WN *tree, LOWER_ACTIONS actions)
         stid = WN_StidPreg(rtype, result, kid1);
         WN_INSERT_BlockLast(else_block, stid);
         if_stmt = WN_CreateIf(test, then_block, else_block);
-        WN_INSERT_BlockLast(block, lower_if(block, if_stmt, actions));
+        WN_INSERT_BlockLast(block, lower_if(block, if_stmt, actions, NULL));
         WN_Delete(tree);
         return WN_LdidPreg(rtype, result);
       case OPR_MIN:
@@ -6976,7 +6976,7 @@ static WN *lower_expr(WN *block, WN *tree, LOWER_ACTIONS actions)
           stid = WN_StidPreg(rtype, result, Load_Leaf(kid1_leaf));
           WN_INSERT_BlockLast(else_block, stid);
           if_stmt = WN_CreateIf(test, then_block, else_block);
-          WN_INSERT_BlockLast(block, lower_if(block, if_stmt, actions));
+          WN_INSERT_BlockLast(block, lower_if(block, if_stmt, actions, NULL));
           WN_Delete(tree);
           return WN_LdidPreg(rtype, result);
         }
