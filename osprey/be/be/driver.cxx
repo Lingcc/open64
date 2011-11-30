@@ -2161,6 +2161,9 @@ main (INT argc, char **argv)
   load_components (argc, argv);
   be_debug();
 
+  // process the component internal options
+  O64_Driver::GetInstance()->ProcessComponentOption();
+  
   MEM_POOL_Push (&MEM_src_pool);
   MEM_POOL_Push (&MEM_src_nz_pool);
   if ( Show_Progress ) {
