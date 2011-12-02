@@ -4176,7 +4176,8 @@ STMTREP::Enter_lhs(CODEMAP *htable, OPT_STAB *opt_stab, COPYPROP *copyprop)
 	      opt_stab->Aux_stab_entry(vaux)->Byte_size() * 8 ==
 	            MTYPE_size_min(_desc) &&
 	      (opr == OPR_ISTORE && 
-	       (opt_stab->Aux_stab_entry(vaux)->Bit_size() == 0 ||
+               // bug362 open64.net, Bit_size == 0 is essential for istorefolds
+	       (opt_stab->Aux_stab_entry(vaux)->Bit_size() == 0 && 
 		opt_stab->Aux_stab_entry(vaux)->Field_id() == WN_field_id(Wn())) ||
 	       opr == OPR_ISTBITS &&
 	       opt_stab->Aux_stab_entry(vaux)->Bit_ofst() == WN_bit_offset(Wn()) &&
