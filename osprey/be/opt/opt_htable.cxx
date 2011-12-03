@@ -2271,7 +2271,11 @@ CODEMAP::Canon_cvt(WN       *wn,
 #endif
   if ((Get_mtype_class(OPCODE_rtype(op)) & 
        Get_mtype_class(OPCODE_desc(op))) != 0 &&
-      MTYPE_size_min(OPCODE_rtype(op)) == MTYPE_size_min(OPCODE_desc(op))) 
+      MTYPE_size_min(OPCODE_rtype(op)) == MTYPE_size_min(OPCODE_desc(op)) &&
+      // bug912 open64.net. Do not delete U4I4CVT if his kid is a constant
+      (!(OPCODE_rtype(op) == MTYPE_U4 && 
+         OPCODE_desc(op) == MTYPE_I4 &&
+         ccr->Tree() == NULL))) 
     return propagated;
 
   if ( WOPT_Enable_Cvt_Folding && 
