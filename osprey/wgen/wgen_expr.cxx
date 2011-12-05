@@ -9969,6 +9969,8 @@ WGEN_Expand_Expr (gs_t exp,
             // such that I4I1LDID will be sign extended and
             // U4U2 will be zero extended
             if (MTYPE_is_integral(rtype) && MTYPE_is_integral(desc) &&
+                // bug911 open64.net. Add Safe guard for CVTL.
+                (desc != MTYPE_BS) &&
                  MTYPE_byte_size( rtype ) > MTYPE_byte_size( desc )) {
                wn = WN_CreateCvtl(OPR_CVTL, Widen_Mtype(desc), MTYPE_V,
 			     MTYPE_size_min(desc), wn);
