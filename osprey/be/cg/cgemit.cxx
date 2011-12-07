@@ -8267,7 +8267,9 @@ Process_Bss_Data (SYMTAB_IDX stab)
 		    ST_base_idx(sym) != ST_st_idx(sym) &&
 		    !ST_is_equivalenced(sym) &&
 		    ST_class(ST_base(sym)) != CLASS_BLOCK &&
-                    pu != NULL && ! PU_ftn_lang(*pu) /* bug 13585 */)
+                    // originally bug 13585. bug 924 open64.net.
+                    // no pu case should also be considered.
+                    ((!pu) || !PU_ftn_lang (*pu)))
 		  goto skip_definition;
 #endif
 		size = TY_size(ST_type(sym));
