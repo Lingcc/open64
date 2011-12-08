@@ -3443,6 +3443,16 @@ AGGINIT::Traverse_Aggregate_Struct (
 #endif
                                 is_bit_field, field_id, fld, emitted_bytes);
         // emitted_bytes updated by the call as reference parameter
+
+        // bug908 open64.net. update field_id for the case of field is struct type.                        
+        if (TY_kind(fld_ty) == KIND_STRUCT) {
+          FLD_HANDLE field;
+          field = TY_fld(fld_ty); // get first field
+          while (!field.Is_Null()) {
+            field_id=Advance_Field_Id(field,field_id);
+            field=FLD_next(field);
+          }
+        }        
       }
     }
 
