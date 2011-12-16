@@ -3210,7 +3210,7 @@ IF_MERGE_TRANS::Is_candidate(SC_NODE * sc1, SC_NODE * sc2, BOOL do_query)
 
   if (!no_alias) {
     if (!do_query && (_action == DO_IFFLIP)) {
-      WN * wn_tmp = WN_kid0(expr1);
+      WN * wn_tmp = (WN_kid_count(expr1) > 0) ? WN_kid0(expr1) : NULL;
       if (wn_tmp) {
 	BOOL result1 = FALSE;
 	BOOL result2 = FALSE;
