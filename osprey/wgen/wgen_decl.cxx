@@ -227,7 +227,8 @@ static void Push_Current_Function_Decl(gs_t decl){
   func_decl_stack_top++;
   if (func_decl_stack_top == func_decl_stack_size) {
     func_decl_stack_size++;
-    func_decl_stack = (gs_t *)realloc(func_decl_stack, func_decl_stack_size);
+    func_decl_stack = (gs_t *)realloc(func_decl_stack, 
+			              func_decl_stack_size * sizeof(gs_t));
   }
   func_decl_stack[func_decl_stack_top] = decl;
 }
