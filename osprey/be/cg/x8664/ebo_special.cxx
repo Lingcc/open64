@@ -9476,9 +9476,6 @@ BOOL EBO_Disassociate_FMA( OP* alu_op )
     INT P_x = REGISTER_CLASS_register_count(ISA_REGISTER_CLASS_float);
     INT local_conflicts = Find_Degree_For_TN(result, regs_in_use);
 
-    TN_MAP_Delete(conflict_map);
-    MEM_POOL_Pop(&fma_exe_pool);
-
     Get_Disassociated_FMA_TOP_Codes( alu_op, &mul_top, &arith_top );
 
     // Chained single use fma instructions produce simple live ranges
@@ -9523,6 +9520,9 @@ BOOL EBO_Disassociate_FMA( OP* alu_op )
 
       ret_val = TRUE;
     }
+
+    TN_MAP_Delete(conflict_map);
+    MEM_POOL_Pop(&fma_exe_pool);
   }
 
   return ret_val;
