@@ -733,7 +733,6 @@ BB_NODE::Remove_stmtrep( STMTREP *stmt )
   }
 
   _stmtlist.Remove(stmt);
-  stmt->Reset_live_stmt();  // WHIRL SSA: mark stmt dead
 }
 
 void
