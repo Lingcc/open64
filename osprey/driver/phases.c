@@ -3013,9 +3013,11 @@ run_ld (void)
 	    }
 	    // Tell ipa_link about the LD_LIBRARY_PATH that was in effect
 	    // before the compiler was run.
-	    str = "-INTERNAL:old_ld_lib_path=";
-	    if (old_ld_library_path)
+	    str = "-INTERNAL:old_ld_lib_path=\"";
+	    if (old_ld_library_path) {
 	      str = concat_strings (str, old_ld_library_path);
+	    }
+	    str = concat_strings (str, "\"");
 	    add_string(args, str);
 
         char *root_prefix = directory_path(get_executable_dir());
