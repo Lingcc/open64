@@ -2544,13 +2544,18 @@ CODEMAP::Add_idef(OPCODE opc, OCC_TAB_ENTRY *occ, STMTREP *stmt,
   CODEREP          *retv;
   OPERATOR         oper = OPCODE_operator(opc);
 
-  // make sure the dtyp for constant base is Pointer_type
-  if (lbase != NULL && lbase->Kind() == CK_CONST 
+#if defined(TARG_X8664)
+  // make sure the dtyp for constant base is Pointer_type if the address
+  // is negative because movl on x86_64 does zero-ext.
+  if (lbase != NULL && lbase->Kind() == CK_CONST
+      && lbase->Const_val() + (INT64)ofst < 0
       && lbase->Dtyp() != Pointer_type)
     lbase->Set_dtyp_strictly(Pointer_type);
-  if (sbase != NULL && sbase->Kind() == CK_CONST 
+  if (sbase != NULL && sbase->Kind() == CK_CONST
+      && sbase->Const_val() + (INT64)ofst < 0
       && sbase->Dtyp() != Pointer_type)
     sbase->Set_dtyp_strictly(Pointer_type);
+#endif
 
   cr->Init_ivar(opc, dtyp, occ, dsctyp, lodty, lbase, sbase,
 		ofst, size, field_id);
