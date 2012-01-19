@@ -5518,14 +5518,6 @@ Adjust_one_eight_bit_reg( BB* bb, OP* op, int opnd_idx, BOOL is_opnd )
     Set_OP_opnd( op, opnd_idx, result );
 
   } else {
-    if (TN_size(result) > 2)
-      Exp_COPY( opnd, result, &ops );
-    else
-    // Do sign/zero extend instead of regular copy.  Needed for "sete" which
-    // doesn't clear the upper bits.  Bug 5621.
-      Exp_COPY_Ext(TN_size(result) == 2 ? TOP_movzwl : TOP_movzbl,
-                   opnd, result, &ops );
-    
     // For inline asm, when opnd is both input and output, it needs to
     // insert a mov from opnd to the new generate "result" to make sure
     // asm output and input still use the same TN.
@@ -5537,6 +5529,7 @@ Adjust_one_eight_bit_reg( BB* bb, OP* op, int opnd_idx, BOOL is_opnd )
  
     // Insert mov before asm
     if (OP_code(op) == TOP_asm) {
+      Exp_COPY( opnd, result, &ops );
       for( int i = 0; i < OP_opnds( op ); i++ ){
         TN * operand = OP_opnd( op, i );
         if ( operand == opnd ) {
@@ -5547,6 +5540,12 @@ Adjust_one_eight_bit_reg( BB* bb, OP* op, int opnd_idx, BOOL is_opnd )
           Set_OP_opnd( op, i, result );
         }
       }
+    }
+    else {
+      // Do sign/zero extend instead of regular copy.  Needed for "sete" which
+      // doesn't clear the upper bits.  Bug 5621.
+      Exp_COPY_Ext(TN_size(result) == 2 ? TOP_movzwl : TOP_movzbl,
+                   opnd, result, &ops );
     }
 
     // Insert mov after asm
