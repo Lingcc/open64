@@ -34,6 +34,7 @@ along with this file; ; see the file osprey/COPYING.  If not, see
 
 AC_PREREQ([2.59])
 AC_INIT([opencc],[4.2])
+AC_CANONICAL_BUILD
 AC_CANONICAL_HOST
 AC_CANONICAL_TARGET
 #AC_PROG_CC
@@ -44,12 +45,12 @@ AC_CANONICAL_TARGET
 # unless the user specifies otherwise, we default to 32 bit mode as the
 # default on x86 64 bit platforms.
 
-if test "$host_alias" = "" && test "$host_cpu" = "x86_64"; then
+if test "$build_alias" = "" && test "$host_alias" = "" && test "$host_cpu" = "x86_64"; then
   host_cpu=i686
   host=$host_cpu-$host_vendor-$host_os
 fi
 
-if test "$target_alias" = "" && test "$target_cpu" = "x86_64"; then
+if test "$build_alias" = "" && test "$target_alias" = "" && test "$target_cpu" = "x86_64"; then
   target_cpu=i686
   target=$target_cpu-$target_vendor-$target_os
 fi
