@@ -9271,6 +9271,10 @@ CFG_TRANS::Compare_trees(WN * wn1, SC_NODE * loop1, WN * wn2, SC_NODE * loop2)
   if ((op1 != op2) || (WN_kid_count(wn1) != WN_kid_count(wn2)))
     return FALSE;
 
+  if ((op1 == OPR_INTCONST)
+      && (WN_const_val(wn1) != WN_const_val(wn2)))
+    return FALSE;
+
   for (int i = 0; i < WN_kid_count(wn1); i++) {
     WN * kid1 = WN_kid(wn1, i);
     WN * kid2 = WN_kid(wn2, i);
