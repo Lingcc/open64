@@ -3507,6 +3507,22 @@ BOOL ICMP_Is_Replaced ( OP *op, TN **opnd_tn, EBO_TN_INFO **opnd_tninfo )
     return FALSE;
   }
 
+  // open64.net bug941. under m32, at ebo post process phase
+  // if the new_top is set to 8bit operator and the GPR is not 8byte addressable 
+  // we disable the change of op.
+  if ( Is_Target_32bit() &&
+       EBO_in_peep &&
+       ( new_top == TOP_cmpi8 ||
+         new_top == TOP_test8 || 
+         new_top == TOP_testi8 ||
+         new_top == TOP_cmp8)) {
+    const REGISTER_SET regs = REGISTER_SUBCLASS_members(ISA_REGISTER_SUBCLASS_m32_8bit_regs);
+    if ( TN_is_register(new_src0) && !REGISTER_SET_MemberP(regs, TN_register(new_src0) )) 
+        return FALSE;
+    if ( TN_is_register(new_src1) && !REGISTER_SET_MemberP(regs, TN_register(new_src1) ))
+        return FALSE;
+  }         
+
   OP* new_op = Mk_OP( new_top, Rflags_TN(), new_src0, new_src1 );
   Set_OP_unrolling( new_op, OP_unrolling ( op ) );
   Set_OP_orig_idx( new_op, OP_map_idx ( op ) );
