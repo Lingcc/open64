@@ -9663,6 +9663,9 @@ Emit_Options (void)
     if (Is_Target_XOP()) fputs ("-mxop ", Asm_File);
     else fputs ("-mno-xop ", Asm_File);
 
+    if (Is_Target_FMA()) fputs ("-mfma ", Asm_File);
+    else fputs ("-mno-fma ", Asm_File);
+
     if (Is_Target_FMA4()) fputs ("-mfma4 ", Asm_File);
     else fputs ("-mno-fma4 ", Asm_File);
 

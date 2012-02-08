@@ -4984,6 +4984,298 @@ WGEN_target_builtins (gs_t exp, INTRINSIC * iopc, BOOL * intrinsic_op)
       *iopc = INTRN_XORPS256;
       break;
 
+    // FMA3 intrinsics: form1
+    case GSBI_IX86_BUILTIN_VFMADDPD_132:
+      *iopc = INTRN_VFMADDPD_132;
+      break;
+    case GSBI_IX86_BUILTIN_VFMADDPD256_132:
+      *iopc = INTRN_VFMADDPD256_132;
+      break;
+    case GSBI_IX86_BUILTIN_VFMADDPS_132:
+      *iopc = INTRN_VFMADDPS_132;
+      break;
+    case GSBI_IX86_BUILTIN_VFMADDPS256_132:
+      *iopc = INTRN_VFMADDPS256_132;
+      break;
+    case GSBI_IX86_BUILTIN_VFMADDSD_132:
+      *iopc = INTRN_VFMADDSD_132;
+      break;
+    case GSBI_IX86_BUILTIN_VFMADDSS_132:
+      *iopc = INTRN_VFMADDSS_132;
+      break;
+    case GSBI_IX86_BUILTIN_VFMADDSUBPD_132:
+      *iopc = INTRN_VFMADDSUBPD_132;
+      break;
+    case GSBI_IX86_BUILTIN_VFMADDSUBPD256_132:
+      *iopc = INTRN_VFMADDSUBPD256_132;
+      break;
+    case GSBI_IX86_BUILTIN_VFMADDSUBPS_132:
+      *iopc = INTRN_VFMADDSUBPS_132;
+      break;
+    case GSBI_IX86_BUILTIN_VFMADDSUBPS256_132:
+      *iopc = INTRN_VFMADDSUBPS256_132;
+      break;
+    case GSBI_IX86_BUILTIN_VFMSUBADDPD_132:
+      *iopc = INTRN_VFMSUBADDPD_132;
+      break;
+    case GSBI_IX86_BUILTIN_VFMSUBADDPD256_132:
+      *iopc = INTRN_VFMSUBADDPD256_132;
+      break;
+    case GSBI_IX86_BUILTIN_VFMSUBADDPS_132:
+      *iopc = INTRN_VFMSUBADDPS_132;
+      break;
+    case GSBI_IX86_BUILTIN_VFMSUBADDPS256_132:
+      *iopc = INTRN_VFMSUBADDPS256_132;
+      break;
+    case GSBI_IX86_BUILTIN_VFMSUBPD_132:
+      *iopc = INTRN_VFMSUBPD_132;
+      break;
+    case GSBI_IX86_BUILTIN_VFMSUBPD256_132:
+      *iopc = INTRN_VFMSUBPD256_132;
+      break;
+    case GSBI_IX86_BUILTIN_VFMSUBPS_132:
+      *iopc = INTRN_VFMSUBPS_132;
+      break;
+    case GSBI_IX86_BUILTIN_VFMSUBPS256_132:
+      *iopc = INTRN_VFMSUBPS256_132;
+      break;
+    case GSBI_IX86_BUILTIN_VFMSUBSD_132:
+      *iopc = INTRN_VFMSUBSD_132;
+      break;
+    case GSBI_IX86_BUILTIN_VFMSUBSS_132:
+      *iopc = INTRN_VFMSUBSS_132;
+      break;
+    case GSBI_IX86_BUILTIN_VFNMADDPD_132:
+      *iopc = INTRN_VFNMADDPD_132;
+      break;
+    case GSBI_IX86_BUILTIN_VFNMADDPD256_132:
+      *iopc = INTRN_VFNMADDPD256_132;
+      break;
+    case GSBI_IX86_BUILTIN_VFNMADDPS_132:
+      *iopc = INTRN_VFNMADDPS_132;
+      break;
+    case GSBI_IX86_BUILTIN_VFNMADDPS256_132:
+      *iopc = INTRN_VFNMADDPS256_132;
+      break;
+    case GSBI_IX86_BUILTIN_VFNMADDSD_132:
+      *iopc = INTRN_VFNMADDSD_132;
+      break;
+    case GSBI_IX86_BUILTIN_VFNMADDSS_132:
+      *iopc = INTRN_VFNMADDSS_132;
+      break;
+    case GSBI_IX86_BUILTIN_VFNMSUBPD_132:
+      *iopc = INTRN_VFNMSUBPD_132;
+      break;
+    case GSBI_IX86_BUILTIN_VFNMSUBPD256_132:
+      *iopc = INTRN_VFNMSUBPD256_132;
+      break;
+    case GSBI_IX86_BUILTIN_VFNMSUBPS_132:
+      *iopc = INTRN_VFNMSUBPS_132;
+      break;
+    case GSBI_IX86_BUILTIN_VFNMSUBPS256_132:
+      *iopc = INTRN_VFNMSUBPS256_132;
+      break;
+    case GSBI_IX86_BUILTIN_VFNMSUBSD_132:
+      *iopc = INTRN_VFNMSUBSD_132;
+      break;
+    case GSBI_IX86_BUILTIN_VFNMSUBSS_132:
+      *iopc = INTRN_VFNMSUBSS_132;
+      break;
+    // FMA3 intrinsics: form2
+    case GSBI_IX86_BUILTIN_VFMADDPD_213:
+      *iopc = INTRN_VFMADDPD_213;
+      break;
+    case GSBI_IX86_BUILTIN_VFMADDPD256_213:
+      *iopc = INTRN_VFMADDPD256_213;
+      break;
+    case GSBI_IX86_BUILTIN_VFMADDPS_213:
+      *iopc = INTRN_VFMADDPS_213;
+      break;
+    case GSBI_IX86_BUILTIN_VFMADDPS256_213:
+      *iopc = INTRN_VFMADDPS256_213;
+      break;
+    case GSBI_IX86_BUILTIN_VFMADDSD_213:
+      *iopc = INTRN_VFMADDSD_213;
+      break;
+    case GSBI_IX86_BUILTIN_VFMADDSS_213:
+      *iopc = INTRN_VFMADDSS_213;
+      break;
+    case GSBI_IX86_BUILTIN_VFMADDSUBPD_213:
+      *iopc = INTRN_VFMADDSUBPD_213;
+      break;
+    case GSBI_IX86_BUILTIN_VFMADDSUBPD256_213:
+      *iopc = INTRN_VFMADDSUBPD256_213;
+      break;
+    case GSBI_IX86_BUILTIN_VFMADDSUBPS_213:
+      *iopc = INTRN_VFMADDSUBPS_213;
+      break;
+    case GSBI_IX86_BUILTIN_VFMADDSUBPS256_213:
+      *iopc = INTRN_VFMADDSUBPS256_213;
+      break;
+    case GSBI_IX86_BUILTIN_VFMSUBADDPD_213:
+      *iopc = INTRN_VFMSUBADDPD_213;
+      break;
+    case GSBI_IX86_BUILTIN_VFMSUBADDPD256_213:
+      *iopc = INTRN_VFMSUBADDPD256_213;
+      break;
+    case GSBI_IX86_BUILTIN_VFMSUBADDPS_213:
+      *iopc = INTRN_VFMSUBADDPS_213;
+      break;
+    case GSBI_IX86_BUILTIN_VFMSUBADDPS256_213:
+      *iopc = INTRN_VFMSUBADDPS256_213;
+      break;
+    case GSBI_IX86_BUILTIN_VFMSUBPD_213:
+      *iopc = INTRN_VFMSUBPD_213;
+      break;
+    case GSBI_IX86_BUILTIN_VFMSUBPD256_213:
+      *iopc = INTRN_VFMSUBPD256_213;
+      break;
+    case GSBI_IX86_BUILTIN_VFMSUBPS_213:
+      *iopc = INTRN_VFMSUBPS_213;
+      break;
+    case GSBI_IX86_BUILTIN_VFMSUBPS256_213:
+      *iopc = INTRN_VFMSUBPS256_213;
+      break;
+    case GSBI_IX86_BUILTIN_VFMSUBSD_213:
+      *iopc = INTRN_VFMSUBSD_213;
+      break;
+    case GSBI_IX86_BUILTIN_VFMSUBSS_213:
+      *iopc = INTRN_VFMSUBSS_213;
+      break;
+    case GSBI_IX86_BUILTIN_VFNMADDPD_213:
+      *iopc = INTRN_VFNMADDPD_213;
+      break;
+    case GSBI_IX86_BUILTIN_VFNMADDPD256_213:
+      *iopc = INTRN_VFNMADDPD256_213;
+      break;
+    case GSBI_IX86_BUILTIN_VFNMADDPS_213:
+      *iopc = INTRN_VFNMADDPS_213;
+      break;
+    case GSBI_IX86_BUILTIN_VFNMADDPS256_213:
+      *iopc = INTRN_VFNMADDPS256_213;
+      break;
+    case GSBI_IX86_BUILTIN_VFNMADDSD_213:
+      *iopc = INTRN_VFNMADDSD_213;
+      break;
+    case GSBI_IX86_BUILTIN_VFNMADDSS_213:
+      *iopc = INTRN_VFNMADDSS_213;
+      break;
+    case GSBI_IX86_BUILTIN_VFNMSUBPD_213:
+      *iopc = INTRN_VFNMSUBPD_213;
+      break;
+    case GSBI_IX86_BUILTIN_VFNMSUBPD256_213:
+      *iopc = INTRN_VFNMSUBPD256_213;
+      break;
+    case GSBI_IX86_BUILTIN_VFNMSUBPS_213:
+      *iopc = INTRN_VFNMSUBPS_213;
+      break;
+    case GSBI_IX86_BUILTIN_VFNMSUBPS256_213:
+      *iopc = INTRN_VFNMSUBPS256_213;
+      break;
+    case GSBI_IX86_BUILTIN_VFNMSUBSD_213:
+      *iopc = INTRN_VFNMSUBSD_213;
+      break;
+    case GSBI_IX86_BUILTIN_VFNMSUBSS_213:
+      *iopc = INTRN_VFNMSUBSS_213;
+      break;
+    // FMA3 intrinsics: form3
+    case GSBI_IX86_BUILTIN_VFMADDPD_231:
+      *iopc = INTRN_VFMADDPD_231;
+      break;
+    case GSBI_IX86_BUILTIN_VFMADDPD256_231:
+      *iopc = INTRN_VFMADDPD256_231;
+      break;
+    case GSBI_IX86_BUILTIN_VFMADDPS_231:
+      *iopc = INTRN_VFMADDPS_231;
+      break;
+    case GSBI_IX86_BUILTIN_VFMADDPS256_231:
+      *iopc = INTRN_VFMADDPS256_231;
+      break;
+    case GSBI_IX86_BUILTIN_VFMADDSD_231:
+      *iopc = INTRN_VFMADDSD_231;
+      break;
+    case GSBI_IX86_BUILTIN_VFMADDSS_231:
+      *iopc = INTRN_VFMADDSS_231;
+      break;
+    case GSBI_IX86_BUILTIN_VFMADDSUBPD_231:
+      *iopc = INTRN_VFMADDSUBPD_231;
+      break;
+    case GSBI_IX86_BUILTIN_VFMADDSUBPD256_231:
+      *iopc = INTRN_VFMADDSUBPD256_231;
+      break;
+    case GSBI_IX86_BUILTIN_VFMADDSUBPS_231:
+      *iopc = INTRN_VFMADDSUBPS_231;
+      break;
+    case GSBI_IX86_BUILTIN_VFMADDSUBPS256_231:
+      *iopc = INTRN_VFMADDSUBPS256_231;
+      break;
+    case GSBI_IX86_BUILTIN_VFMSUBADDPD_231:
+      *iopc = INTRN_VFMSUBADDPD_231;
+      break;
+    case GSBI_IX86_BUILTIN_VFMSUBADDPD256_231:
+      *iopc = INTRN_VFMSUBADDPD256_231;
+      break;
+    case GSBI_IX86_BUILTIN_VFMSUBADDPS_231:
+      *iopc = INTRN_VFMSUBADDPS_231;
+      break;
+    case GSBI_IX86_BUILTIN_VFMSUBADDPS256_231:
+      *iopc = INTRN_VFMSUBADDPS256_231;
+      break;
+    case GSBI_IX86_BUILTIN_VFMSUBPD_231:
+      *iopc = INTRN_VFMSUBPD_231;
+      break;
+    case GSBI_IX86_BUILTIN_VFMSUBPD256_231:
+      *iopc = INTRN_VFMSUBPD256_231;
+      break;
+    case GSBI_IX86_BUILTIN_VFMSUBPS_231:
+      *iopc = INTRN_VFMSUBPS_231;
+      break;
+    case GSBI_IX86_BUILTIN_VFMSUBPS256_231:
+      *iopc = INTRN_VFMSUBPS256_231;
+      break;
+    case GSBI_IX86_BUILTIN_VFMSUBSD_231:
+      *iopc = INTRN_VFMSUBSD_231;
+      break;
+    case GSBI_IX86_BUILTIN_VFMSUBSS_231:
+      *iopc = INTRN_VFMSUBSS_231;
+      break;
+    case GSBI_IX86_BUILTIN_VFNMADDPD_231:
+      *iopc = INTRN_VFNMADDPD_231;
+      break;
+    case GSBI_IX86_BUILTIN_VFNMADDPD256_231:
+      *iopc = INTRN_VFNMADDPD256_231;
+      break;
+    case GSBI_IX86_BUILTIN_VFNMADDPS_231:
+      *iopc = INTRN_VFNMADDPS_231;
+      break;
+    case GSBI_IX86_BUILTIN_VFNMADDPS256_231:
+      *iopc = INTRN_VFNMADDPS256_231;
+      break;
+    case GSBI_IX86_BUILTIN_VFNMADDSD_231:
+      *iopc = INTRN_VFNMADDSD_231;
+      break;
+    case GSBI_IX86_BUILTIN_VFNMADDSS_231:
+      *iopc = INTRN_VFNMADDSS_231;
+      break;
+    case GSBI_IX86_BUILTIN_VFNMSUBPD_231:
+      *iopc = INTRN_VFNMSUBPD_231;
+      break;
+    case GSBI_IX86_BUILTIN_VFNMSUBPD256_231:
+      *iopc = INTRN_VFNMSUBPD256_231;
+      break;
+    case GSBI_IX86_BUILTIN_VFNMSUBPS_231:
+      *iopc = INTRN_VFNMSUBPS_231;
+      break;
+    case GSBI_IX86_BUILTIN_VFNMSUBPS256_231:
+      *iopc = INTRN_VFNMSUBPS256_231;
+      break;
+    case GSBI_IX86_BUILTIN_VFNMSUBSD_231:
+      *iopc = INTRN_VFNMSUBSD_231;
+      break;
+    case GSBI_IX86_BUILTIN_VFNMSUBSS_231:
+      *iopc = INTRN_VFNMSUBSS_231;
+      break;
+
     // FMA4 intrinsics
     case GSBI_IX86_BUILTIN_VFMADDPD:
       *iopc = INTRN_VFMADDPD;

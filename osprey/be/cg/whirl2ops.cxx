@@ -4660,7 +4660,11 @@ Handle_Replicate (WN* expr, WN* parent, TN* result) {
 }
 
 static TN* 
-Handle_Fma_Operation(WN* expr, TN* result, WN *mul_wn, BOOL mul_kid0) 
+Handle_Fma_Operation(WN* expr, 
+                     TN* result, 
+                     WN *mul_wn, 
+                     BOOL mul_kid0,
+                     BOOL fma4) 
 {
   
   WN* add_wn = (mul_kid0) ? WN_kid1(expr) : WN_kid0(expr); 
@@ -4674,20 +4678,20 @@ Handle_Fma_Operation(WN* expr, TN* result, WN *mul_wn, BOOL mul_kid0)
   // now match a scalar or vector fma4 
   switch (WN_opcode(mul_wn)) {
   case OPC_F4MPY:
-    opcode = TOP_vfmaddss;
+    opcode = (fma4) ? TOP_vfmaddss : TOP_xfmadd213ss;
     break;
   case OPC_F8MPY:
-    opcode = TOP_vfmaddsd;
+    opcode = (fma4) ? TOP_vfmaddsd : TOP_xfmadd213sd;
     break;
   case OPC_V16F4MPY:
   case OPC_V16C4MPY:
     FmtAssert(is_vector, ("unexpected fma vector form"));
-    opcode = TOP_vfmaddps;
+    opcode = (fma4) ? TOP_vfmaddps : TOP_xfmadd213ps;
     break;
   case OPC_V16F8MPY:
   case OPC_V16C8MPY:
     FmtAssert(is_vector, ("unexpected fma vector form"));
-    opcode = TOP_vfmaddpd;
+    opcode = (fma4) ? TOP_vfmaddpd : TOP_xfmadd213pd;
     break;
   default:
     FmtAssert(FALSE, ("unexpected fma form"));
@@ -4715,7 +4719,11 @@ Handle_Fma_Operation(WN* expr, TN* result, WN *mul_wn, BOOL mul_kid0)
 }
 
 static TN* 
-Handle_Fnma_Operation(WN* expr, TN* result, WN *mul_wn, BOOL mul_kid0) 
+Handle_Fnma_Operation(WN* expr, 
+                      TN* result, 
+                      WN *mul_wn, 
+                      BOOL mul_kid0, 
+                      BOOL fma4) 
 {
   
   WN* add_wn = (mul_kid0) ? WN_kid1(expr) : WN_kid0(expr); 
@@ -4729,20 +4737,20 @@ Handle_Fnma_Operation(WN* expr, TN* result, WN *mul_wn, BOOL mul_kid0)
   // now match a scalar or vector fma4 
   switch (WN_opcode(mul_wn)) {
   case OPC_F4MPY:
-    opcode = TOP_vfnmaddss;
+    opcode = (fma4) ? TOP_vfnmaddss : TOP_xfnmadd213ss;
     break;
   case OPC_F8MPY:
-    opcode = TOP_vfnmaddsd;
+    opcode = (fma4) ? TOP_vfnmaddsd : TOP_xfnmadd213sd;
     break;
   case OPC_V16F4MPY:
   case OPC_V16C4MPY:
     FmtAssert(is_vector, ("unexpected fma vector form"));
-    opcode = TOP_vfnmaddps;
+    opcode = (fma4) ? TOP_vfnmaddps : TOP_xfnmadd213ps;
     break;
   case OPC_V16F8MPY:
   case OPC_V16C8MPY:
     FmtAssert(is_vector, ("unexpected fma vector form"));
-    opcode = TOP_vfnmaddpd;
+    opcode = (fma4) ? TOP_vfnmaddpd : TOP_xfnmadd213pd;
     break;
   default:
     FmtAssert(FALSE, ("unexpected fma form"));
@@ -4770,7 +4778,11 @@ Handle_Fnma_Operation(WN* expr, TN* result, WN *mul_wn, BOOL mul_kid0)
 }
 
 static TN* 
-Handle_Fms_Operation(WN* expr, TN* result, WN *mul_wn, BOOL mul_kid0) 
+Handle_Fms_Operation(WN* expr, 
+                     TN* result, 
+                     WN *mul_wn, 
+                     BOOL mul_kid0,
+                     BOOL fma4) 
 {
   WN* sub_wn = (mul_kid0) ? WN_kid1(expr) : WN_kid0(expr); 
   TN* opnd0; 
@@ -4783,20 +4795,20 @@ Handle_Fms_Operation(WN* expr, TN* result, WN *mul_wn, BOOL mul_kid0)
   // now match a scalar or vector fma4 
   switch (WN_opcode(mul_wn)) {
   case OPC_F4MPY:
-    opcode = TOP_vfmsubss;
+    opcode = (fma4) ? TOP_vfmsubss : TOP_xfmsub213ss;
     break;
   case OPC_F8MPY:
-    opcode = TOP_vfmsubsd;
+    opcode = (fma4) ? TOP_vfmsubsd : TOP_xfmsub213sd;
     break;
   case OPC_V16F4MPY:
   case OPC_V16C4MPY:
     FmtAssert(is_vector, ("unexpected fms vector form"));
-    opcode = TOP_vfmsubps;
+    opcode = (fma4) ? TOP_vfmsubps : TOP_xfmsub213ps;
     break;
   case OPC_V16F8MPY:
   case OPC_V16C8MPY:
     FmtAssert(is_vector, ("unexpected fms vector form"));
-    opcode = TOP_vfmsubpd;
+    opcode = (fma4) ? TOP_vfmsubpd : TOP_xfmsub213pd;
     break;
   default:
     FmtAssert(FALSE, ("unexpected fms form"));
@@ -5406,7 +5418,9 @@ Expand_Expr (WN *expr, WN *parent, TN *result)
   case OPR_SUB:
   case OPR_ADD:
     if ((CG_opt_level > 1) && Is_Target_Orochi() && 
-        Is_Target_AVX() && Is_Target_FMA4()) {
+        Is_Target_AVX() &&
+        (Is_Target_FMA4() || Is_Target_FMA()) ) {
+      BOOL fma4 = Is_Target_FMA4();
       BOOL expr_is_complex = FALSE;
       TYPE_ID rtype = OPCODE_rtype(opcode);
       WN *mul_wn = NULL;
@@ -5426,9 +5440,9 @@ Expand_Expr (WN *expr, WN *parent, TN *result)
           rtype = OPCODE_rtype(WN_opcode (mul_wn));
           if (MTYPE_is_float(rtype) || MTYPE_is_vector(rtype)) {
             if (WN_operator(expr) == OPR_ADD) {
-              return Handle_Fma_Operation(expr, result, mul_wn, TRUE);
+              return Handle_Fma_Operation(expr, result, mul_wn, TRUE, fma4);
             } else if (WN_operator(expr) == OPR_SUB) {
-              return Handle_Fms_Operation(expr, result, mul_wn, TRUE);
+              return Handle_Fms_Operation(expr, result, mul_wn, TRUE, fma4);
             }
           }
         } else if ((WN_operator(mul_wn = WN_kid(expr, 1)) == OPR_MPY) &&
@@ -5439,11 +5453,11 @@ Expand_Expr (WN *expr, WN *parent, TN *result)
           rtype = OPCODE_rtype(WN_opcode (mul_wn));
           if (MTYPE_is_float(rtype) || MTYPE_is_vector(rtype)) {
             if (WN_operator(expr) == OPR_ADD) {
-              return Handle_Fma_Operation(expr, result, mul_wn, FALSE);
+              return Handle_Fma_Operation(expr, result, mul_wn, FALSE, fma4);
             } else if ((WN_operator(expr) == OPR_SUB) && 
                        (WN_opcode(expr) != OPC_V16C4SUB) &&
                        (WN_opcode(expr) != OPC_V16C8SUB)) {
-              return Handle_Fnma_Operation(expr, result, mul_wn, FALSE);
+              return Handle_Fnma_Operation(expr, result, mul_wn, FALSE, fma4);
             }
           }
         }

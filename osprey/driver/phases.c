@@ -433,6 +433,11 @@ add_targ_options ( string_list_t *args )
   else
     add_string(args, "-TARG:xop=off");
 
+  if (fma == TRUE)
+    add_string(args, "-TARG:fma=on");
+  else
+    add_string(args, "-TARG:fma=off");
+
   if (fma4 == TRUE)
     add_string(args, "-TARG:fma4=on");
   else

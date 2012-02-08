@@ -247,6 +247,7 @@ UINT32 CGTARG_Mem_Ref_Bytes(const OP *memop)
       case TOP_vcvtsi2ssx:
       case TOP_vcvtsi2ssxx:
       case TOP_vcvtsi2ssxxx:
+      // FMA4
       case TOP_vfmaddxss:
       case TOP_vfmaddxxss:
       case TOP_vfmaddxxxss:
@@ -271,6 +272,45 @@ UINT32 CGTARG_Mem_Ref_Bytes(const OP *memop)
       case TOP_vfnmsubxrss:
       case TOP_vfnmsubxxrss:
       case TOP_vfnmsubxxxrss:
+      // FMA3: form1
+      case TOP_xfmadd132xss:
+      case TOP_xfmadd132xxss:
+      case TOP_xfmadd132xxxss:
+      case TOP_xfnmadd132xss:
+      case TOP_xfnmadd132xxss:
+      case TOP_xfnmadd132xxxss:
+      case TOP_xfmsub132xss:
+      case TOP_xfmsub132xxss:
+      case TOP_xfmsub132xxxss:
+      case TOP_xfnmsub132xss:
+      case TOP_xfnmsub132xxss:
+      case TOP_xfnmsub132xxxss:
+      // FMA3: form2
+      case TOP_xfmadd213xss:
+      case TOP_xfmadd213xxss:
+      case TOP_xfmadd213xxxss:
+      case TOP_xfnmadd213xss:
+      case TOP_xfnmadd213xxss:
+      case TOP_xfnmadd213xxxss:
+      case TOP_xfmsub213xss:
+      case TOP_xfmsub213xxss:
+      case TOP_xfmsub213xxxss:
+      case TOP_xfnmsub213xss:
+      case TOP_xfnmsub213xxss:
+      case TOP_xfnmsub213xxxss:
+      // FMA3: form3
+      case TOP_xfmadd231xss:
+      case TOP_xfmadd231xxss:
+      case TOP_xfmadd231xxxss:
+      case TOP_xfnmadd231xss:
+      case TOP_xfnmadd231xxss:
+      case TOP_xfnmadd231xxxss:
+      case TOP_xfmsub231xss:
+      case TOP_xfmsub231xxss:
+      case TOP_xfmsub231xxxss:
+      case TOP_xfnmsub231xss:
+      case TOP_xfnmsub231xxss:
+      case TOP_xfnmsub231xxxss:
       case TOP_vfsqrtxss:
       case TOP_vfsqrtxxss:
       case TOP_vfsqrtxxxss:
@@ -369,6 +409,7 @@ UINT32 CGTARG_Mem_Ref_Bytes(const OP *memop)
       case TOP_vcvtsi2ssqx:
       case TOP_vcvtsi2ssqxx:
       case TOP_vcvtsi2ssqxxx:
+      // FMA4
       case TOP_vfmaddxsd:
       case TOP_vfmaddxxsd:
       case TOP_vfmaddxxxsd:
@@ -393,6 +434,45 @@ UINT32 CGTARG_Mem_Ref_Bytes(const OP *memop)
       case TOP_vfnmsubxrsd:
       case TOP_vfnmsubxxrsd:
       case TOP_vfnmsubxxxrsd:
+      // FMA3: form1
+      case TOP_xfmadd132xsd:
+      case TOP_xfmadd132xxsd:
+      case TOP_xfmadd132xxxsd:
+      case TOP_xfnmadd132xsd:
+      case TOP_xfnmadd132xxsd:
+      case TOP_xfnmadd132xxxsd:
+      case TOP_xfmsub132xsd:
+      case TOP_xfmsub132xxsd:
+      case TOP_xfmsub132xxxsd:
+      case TOP_xfnmsub132xsd:
+      case TOP_xfnmsub132xxsd:
+      case TOP_xfnmsub132xxxsd:
+      // FMA3: form2
+      case TOP_xfmadd213xsd:
+      case TOP_xfmadd213xxsd:
+      case TOP_xfmadd213xxxsd:
+      case TOP_xfnmadd213xsd:
+      case TOP_xfnmadd213xxsd:
+      case TOP_xfnmadd213xxxsd:
+      case TOP_xfmsub213xsd:
+      case TOP_xfmsub213xxsd:
+      case TOP_xfmsub213xxxsd:
+      case TOP_xfnmsub213xsd:
+      case TOP_xfnmsub213xxsd:
+      case TOP_xfnmsub213xxxsd:
+      // FMA3: form3
+      case TOP_xfmadd231xsd:
+      case TOP_xfmadd231xxsd:
+      case TOP_xfmadd231xxxsd:
+      case TOP_xfnmadd231xsd:
+      case TOP_xfnmadd231xxsd:
+      case TOP_xfnmadd231xxxsd:
+      case TOP_xfmsub231xsd:
+      case TOP_xfmsub231xxsd:
+      case TOP_xfmsub231xxxsd:
+      case TOP_xfnmsub231xsd:
+      case TOP_xfnmsub231xxsd:
+      case TOP_xfnmsub231xxxsd:
       case TOP_vfsqrtxsd:
       case TOP_vfsqrtxxsd:
       case TOP_vfsqrtxxxsd:

@@ -2132,6 +2132,10 @@ I-u%s		;		Cc	ld	"-u %s"
 	"Enable XOP extensions"
 -mno-xop	toggle(&xop,FALSE);	ALL	CPP,cfe		self
 	"Disable XOP extensions"
+-mfma	toggle(&sse2,TRUE);toggle(&fma,TRUE);	ALL	CPP,cfe		self
+	"Enable FMA3 extensions"
+-mno-fma	toggle(&fma,FALSE);	ALL	CPP,cfe		self
+	"Disable FMA3 extensions"
 -mfma4	toggle(&sse2,TRUE);toggle(&fma4,TRUE);	ALL	CPP,cfe		self
 	"Enable FMA4 extensions"
 -mno-fma4	toggle(&fma4,FALSE);	ALL	CPP,cfe		self
