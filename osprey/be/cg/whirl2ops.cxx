@@ -114,6 +114,7 @@
 #include "be_symtab.h"
 #include "be_util.h"
 #include "config_asm.h"
+#include "wn_tree_util.h"
 
 #if defined(TARG_X8664) || defined(TARG_NVISA) || defined(TARG_SL) || defined(TARG_PPC32)
 #include "cgexp_internals.h"
@@ -6705,20 +6706,40 @@ Find_Asm_Out_Parameter_Load (const WN* stmt, PREG_NUM preg_num, ST** ded_st)
 #endif
     if (OPERATOR_is_store(WN_operator(stmt))) {
       WN* load = WN_kid0(stmt);
-      OPERATOR opr = WN_operator(load);
-      if (opr == OPR_CVT || opr == OPR_CVTL) {
-        load = WN_kid0(load);
-        opr = WN_operator(load);
-      }
-      if (OPERATOR_is_load(opr) || opr == OPR_LDA) {
-        if (WN_has_sym(load) &&
-            WN_class(load) == CLASS_PREG && 
-            WN_offset(load) == preg_num) {
-          ret_load = load;
-          break;
+      // open64.net bug948. Since we allow copy progration into the 
+      // ASM_INPUT. More aggressive optimizations could be made.
+      // Now, we could not always assume the "LDID preg_num" for ASM_STMTS output
+      // appears in 
+      // ...
+      //  LDID preg_num
+      // STID
+      // ...
+      // or 
+      // ...
+      //   LDID preg_num
+      //  CVT(CVTL)
+      // STID
+      // ...
+      // forms in the succeeding stmts.
+      // Instead, we now iterate on the store kid to find the "LDID preg_num"
+      // expressions.
+      WN_TREE_CONTAINER<PRE_ORDER> lpre(load);
+      WN_TREE_CONTAINER<PRE_ORDER> :: iterator lipre;
+      for ( lipre = lpre.begin() ; lipre != lpre.end() ; ++ lipre) {
+        WN* load_expr= lipre.Wn();
+        OPERATOR opr = WN_operator(load_expr);
+        if (OPERATOR_is_load(opr) || opr == OPR_LDA) {
+          if (WN_has_sym(load_expr) &&
+              WN_class(load_expr) == CLASS_PREG && 
+              WN_offset(load_expr) == preg_num) {
+            ret_load = load_expr;
+            break;
+          }
         }
       }
     }
+    if (ret_load)
+      break;
   }
   if (ret_load) {
     if (OPERATOR_has_sym(WN_operator(stmt)) &&
