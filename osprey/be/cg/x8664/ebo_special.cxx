@@ -2728,6 +2728,30 @@ static BOOL move_ext_is_replaced( OP* op, const EBO_TN_INFO* tninfo )
   if( new_op == NULL )
     return FALSE;
 
+  // open64.net bug949. When we do OP changes, we don't
+  // miss the check for movext ops on a byte register.
+  // If the byte register is not addressable under -m32,
+  // We cancel this change.
+
+  if ( Is_Target_32bit() &&
+       EBO_in_peep && 
+       TOP_is_move_ext( OP_code(new_op ))) {
+
+    const TOP check_top = OP_code(new_op);
+    if (check_top == TOP_movsbl ||
+        check_top == TOP_movzbl ||
+        check_top == TOP_movsbq ||
+        check_top == TOP_movzbq ) {
+      const REGISTER reg = TN_register(OP_opnd(new_op, 0));
+      const REGISTER_SET regs =
+        REGISTER_SUBCLASS_members(ISA_REGISTER_SUBCLASS_m32_8bit_regs);
+    
+    if( !REGISTER_SET_MemberP( regs, reg ) )
+      return FALSE;
+    }
+  }
+
+
   Set_OP_unrolling( new_op, OP_unrolling(op) );
   Set_OP_orig_idx( new_op, OP_map_idx(op) );
   Set_OP_unroll_bb( new_op, OP_unroll_bb(op) );
