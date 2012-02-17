@@ -3637,6 +3637,46 @@ Modify_Asm_String (char* asm_string, UINT32 position, bool memory,
       asm_string =  Replace_Substring(asm_string, x86pattern, suffix);
     }
   }
+
+  // open64.net bug950. Handle any template modifers 
+  // %L,%W,%B,%Q,%S,%T. Referrence i386.c(gcc) print_operand.
+  {
+    char L_suffix[8] = {0};
+    char W_suffix[8] = {0};
+    char B_suffix[8] = {0};
+    char Q_suffix[8] = {0};
+    char S_suffix[8] = {0};
+    char T_suffix[8] = {0};
+    int rL,rW,rB,rQ,rS,rT;
+    rL = snprintf(L_suffix, sizeof(L_suffix), "%%L%d", position);
+    rW = snprintf(W_suffix, sizeof(W_suffix), "%%W%d", position);
+    rB = snprintf(B_suffix, sizeof(B_suffix), "%%B%d", position);
+    rQ = snprintf(Q_suffix, sizeof(Q_suffix), "%%Q%d", position);
+    rS = snprintf(S_suffix, sizeof(S_suffix), "%%S%d", position);
+    rT = snprintf(T_suffix, sizeof(T_suffix), "%%T%d", position);
+    FmtAssert(( rL >= 0 && rL < sizeof(L_suffix)) &&
+              ( rW >= 0 && rW < sizeof(W_suffix)) &&
+              ( rB >= 0 && rB < sizeof(B_suffix)) &&
+              ( rQ >= 0 && rQ < sizeof(Q_suffix)) &&
+              ( rS >= 0 && rS < sizeof(S_suffix)) &&
+              ( rT >= 0 && rT < sizeof(T_suffix)), 
+              ("Error, Unable to generate format string in Modify_Asm_String!\n"));
+    if (strstr(asm_string, L_suffix) != NULL) {
+      asm_string =  Replace_Substring(asm_string, L_suffix, "l");
+    } else if (strstr(asm_string, W_suffix) != NULL) {
+      asm_string =  Replace_Substring(asm_string, W_suffix, "w");
+    } else if (strstr(asm_string, B_suffix) != NULL) {
+      asm_string =  Replace_Substring(asm_string, B_suffix, "b");
+    } else if (strstr(asm_string, Q_suffix) != NULL) {
+      asm_string =  Replace_Substring(asm_string, Q_suffix, "l");
+    } else if (strstr(asm_string, S_suffix) != NULL) {
+      asm_string =  Replace_Substring(asm_string, S_suffix, "s");
+    } else if (strstr(asm_string, T_suffix) != NULL) {
+      asm_string =  Replace_Substring(asm_string, T_suffix, "t");
+    }
+  }
+
+
 #endif // TARG_X8664
   
   return asm_string;
