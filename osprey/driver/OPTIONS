@@ -421,10 +421,6 @@ I-cpp_pic	;		ALL	NONE	"-D_PIC -D__DSO__"
 	""
 -mplist		;		FTN,cc	be	"-mplist"
 	""
--PROMP:next_id=%d ;		FTN,Cc	be	"-PROMP:next_id=%d"
-	""
--PROMP:%s	;		FTN,Cc	be	"-PHASE:prompf -PROMP:%s"
-	""
 
 -IPA:%s	toggle(&ipa,TRUE);		ALL	ipl,ipap	"-IPA:%s"
 	"option group to control interprocedural optimizations"
@@ -992,14 +988,14 @@ I-xall		;	FTN	ffe	self
 	""
 -apo*list	auto_parallelize=TRUE;keep_list=TRUE;		Cc,FTN	be	"-pfa -LNO:prompl"
 	""
--apo*keep	auto_parallelize=TRUE;keep_list=keep_mp=TRUE;Process_Promp();		Cc,FTN	be	"-pfa -LNO:prompl"
+-apo*keep	auto_parallelize=TRUE;keep_list=keep_mp=TRUE;		Cc,FTN	be	"-pfa -LNO:prompl"
 	""
 % invoke pfa  - which discovers parallelism
 -pfa		auto_parallelize=TRUE;		Cc,FTN	be	"-pfa"
 	""
 -pfa*list	auto_parallelize=TRUE;keep_list=TRUE; 	Cc,FTN	be	"-pfa -LNO:prompl"
 	""
--pfa*keep	auto_parallelize=TRUE;keep_list=keep_mp=TRUE;Process_Promp();		Cc,FTN	be	"-pfa -LNO:prompl"
+-pfa*keep	auto_parallelize=TRUE;keep_list=keep_mp=TRUE;		Cc,FTN	be	"-pfa -LNO:prompl"
 	""
 % Because of limitation on derived flags, we repeat the -pfa,%s in the 
 % implied list.  This is to find the parent flag so action is done.
@@ -1132,7 +1128,7 @@ I-scan%s		;		FTN	PFA	self
 	""
 -pca*list	auto_parallelize=TRUE;keep_list=TRUE; 	Cc,FTN be "-pfa -LNO:prompl"
 	""
--pca*keep	auto_parallelize=TRUE;keep_list=keep_mp=TRUE;Process_Promp();	 cc,FTN be	"-pfa -LNO:prompl"
+-pca*keep	auto_parallelize=TRUE;keep_list=keep_mp=TRUE;	 cc,FTN be	"-pfa -LNO:prompl"
 	""
 -pca,%s		{auto_parallelize=TRUE; warning("options after -pca, are ignored; should just use -pca");}	Cc,FTN	be	"-pfa"
 	""
@@ -1231,8 +1227,6 @@ I-u%s		;		Cc	ld	"-u %s"
 -ar	;		ALL	NONE	""
 	"create an archive (instead of a shared object or executable) using ar"
 
--promp	;	 	FTN,Cc	 be	"-PHASE:prompf -PROMP:=on"
-	""
 
 %%% gcc compiler options
 

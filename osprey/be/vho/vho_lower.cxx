@@ -65,7 +65,6 @@
 #include "callutil.h"
 #include "targ_sim.h"
 #include "cxx_template.h"
-#include "prompf.h" 
 #include "wb_f90_lower.h"
 #include "wn_lower.h"
 #include "be_util.h"            // For Current_PU_Count
@@ -8655,7 +8654,7 @@ WN * VHO_Lower_Driver (PU_Info* pu_info,
    
    // Only run F90 lowering if this is not the link phase of an IPA compilation
    if (Ipa_Ident_Number == 0) {
-      WB_F90_Lower_Initialize(wn, Prompf_Id_Map);
+      WB_F90_Lower_Initialize(wn);
       wn = F90_Lower(pu_info, wn);
       WB_F90_Lower_Terminate();
    }

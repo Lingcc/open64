@@ -650,10 +650,6 @@ BUILD_SKIP_WHIRL2C = TRUE
 BUILD_SKIP_WHIRL2F = TRUE
 endif
 
-# Always skip obsolete backend components.
-BUILD_SKIP_PROMPF = TRUE
-STD_COMPILE_OPTS += -DBUILD_SKIP_PROMPF
-
 include ${BUILD_TOT}/../defs.mk
 
 STD_C_OPTS = -std=gnu99 -D_GNU_SOURCE

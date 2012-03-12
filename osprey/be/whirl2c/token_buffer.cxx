@@ -307,10 +307,6 @@ static BOOL   Inside_F77_Directive = FALSE;
 static UINT32 Max_Line_Length_Outside_F77_Directive;
 static char   F77_Directive_Continuation[MAX_F77_DIRECTIVE_PREFIX_SIZE+1];
 
-/* Use a special syntax for the ProMPF analysis file.
- */
-static BOOL Emit_Prompf_Srcpos_Map = FALSE;
-
 
 /*--------------- routines for debugging a token buffer ---------------*/
 /*---------------------------------------------------------------------*/
@@ -1108,22 +1104,13 @@ Output_Srcpos_Map(FILE *mapfile, SRCPOS srcpos)
       if (USRCPOS_filenum(usrcpos) > Max_Srcpos_Map_Filenum)
 	 Max_Srcpos_Map_Filenum = USRCPOS_filenum(usrcpos);
       
-      if (Emit_Prompf_Srcpos_Map)
-	 status = fprintf(mapfile, 
-			  " [%u %u]-->[%u %u %u]\n",
-			  Current_Output_Line, 
-			  Current_Output_Col,
-			  USRCPOS_filenum(usrcpos),
-			  USRCPOS_linenum(usrcpos),
-			  USRCPOS_column(usrcpos));
-      else
-	 status = fprintf(mapfile, 
-			  " ((%u %u) (%u %u %u))\n",
-			  Current_Output_Line, 
-			  Current_Output_Col,
-			  USRCPOS_filenum(usrcpos),
-			  USRCPOS_linenum(usrcpos),
-			  USRCPOS_column(usrcpos));
+      status = fprintf(mapfile, 
+                       " ((%u %u) (%u %u %u))\n",
+                       Current_Output_Line, 
+                       Current_Output_Col,
+                       USRCPOS_filenum(usrcpos),
+                       USRCPOS_linenum(usrcpos),
+                       USRCPOS_column(usrcpos));
 
       Is_True(status >= 0, ("Output error to srcpos mapping file"));
    }
@@ -1390,10 +1377,7 @@ Write_Srcpos_File_Map_Table(FILE *srcpos_map_file)
    USRCPOS     usrcpos;
    INT32       status;
 
-   if (Emit_Prompf_Srcpos_Map)
-      fprintf(srcpos_map_file, "SRCFILE_MAP_BEGIN\n");
-   else
-      fprintf(srcpos_map_file, "(SRCPOS-FILEMAP\n");
+   fprintf(srcpos_map_file, "(SRCPOS-FILEMAP\n");
    for (filenum = 1; filenum <= Max_Srcpos_Map_Filenum; filenum++)
    {
       USRCPOS_filenum(usrcpos) = filenum;
@@ -1401,26 +1385,19 @@ Write_Srcpos_File_Map_Table(FILE *srcpos_map_file)
       if (fname != NULL && dirname != NULL)
       {
 	 status = fprintf(srcpos_map_file, 
-			  " %c%u \"%s/%s\"%c\n",
-			  Emit_Prompf_Srcpos_Map ? '[' : '(',
-			  filenum, dirname, fname,
-			  Emit_Prompf_Srcpos_Map ? ']' : ')');
+			  " (%u \"%s/%s\")\n",
+			  filenum, dirname, fname);
 	 Is_True(status >= 0, ("Output error to srcpos mapping file"));
       }
       else if (fname != NULL)
       {
 	 status = fprintf(srcpos_map_file, 
-			  " %c%u \"%s\"%c\n",
-			  Emit_Prompf_Srcpos_Map ? '[' : '(',
-			  filenum, fname,
-			  Emit_Prompf_Srcpos_Map ? ']' : ')');
+			  " (%u \"%s\")\n",
+			  filenum, fname);
 	 Is_True(status >= 0, ("Output error to srcpos mapping file"));
       }
    } /* for */
-   if (Emit_Prompf_Srcpos_Map)
-      fprintf(srcpos_map_file, "SRCFILE_MAP_END\n");
-   else
-      fprintf(srcpos_map_file, ")\n");
+   fprintf(srcpos_map_file, ")\n");
 } /* Write_Srcpos_File_Map_Table */
 
 
@@ -1428,12 +1405,10 @@ Write_Srcpos_File_Map_Table(FILE *srcpos_map_file)
 /*---------------------------------------------------------------------*/
 
 void
-Initialize_Token_Buffer(FORMAT_KIND output_format, BOOL prompf_srcmap_format)
+Initialize_Token_Buffer(FORMAT_KIND output_format)
 {
    Output_Format = output_format;
    Max_Line_Length = Default_Max_Line_Length[output_format];
-
-   Emit_Prompf_Srcpos_Map = prompf_srcmap_format;
 
    write_buffer_next = 0;
    last_split_pt = INVALID_SPLIT_PT;

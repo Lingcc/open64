@@ -104,11 +104,7 @@
 #include "xstats.h"
 #include "tracing.h"
 #include "cgir.h"
-#if defined(SHARED_BUILD)
-#include "import.h"
-#endif
 #include "opt_alias_interface.h"	/* for Print_alias_info */
-#include "anl_driver.h"			/* for Anl_File_Path */
 #include "ti_asm.h"
 #include "ti_errors.h"
 #include "targ_proc_properties.h"
@@ -5108,17 +5104,6 @@ EMT_Assemble_BB ( BB *bb, WN *rwn )
     FREQ_Print_BB_Note(bb, Asm_File);
 #endif
   }
-  if (Run_prompf) {
-#ifndef TARG_NVISA
-    if (BB_loop_head_bb(bb)) {
-      Emit_Loop_Note(bb, anl_file);
-    }
-
-    if (BB_has_note(bb)) {
-      NOTE_BB_Act (bb, NOTE_PRINT_TO_ANL_FILE, anl_file);
-    }
-#endif
-  }
 
 #if Is_True_On
   Init_Sanity_Checking_For_BB ();
@@ -8788,12 +8773,6 @@ EMT_Emit_PU ( ST *pu, DST_IDX pu_dst, WN *rwn )
    */
   STACK_FP_Fixup_PU();
 
-  if ( Run_prompf ) {
-    const char *path = Anl_File_Path();
-    anl_file = fopen(path, "a");
-    fputc ('\n', anl_file);
-  }
-
   Init_ST_elf_index(CURRENT_SYMTAB);
 
   cur_section = NULL;
@@ -9172,10 +9151,6 @@ EMT_Emit_PU ( ST *pu, DST_IDX pu_dst, WN *rwn )
 		Initial_Pu_PC, PC);
 #endif // TARG_X8664
 #endif // TARG_LOONGSON
-  }
-  if (Run_prompf) {
-    fputc ('\n', anl_file);
-    fclose(anl_file);
   }
 
   PU_Size = PC - Initial_Pu_PC;

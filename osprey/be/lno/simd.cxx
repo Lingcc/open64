@@ -89,7 +89,6 @@ static char *rcs_id = "$Source: be/lno/SCCS/s.simd.cxx $ $Revision: 1.244 $";
 #include "region_main.h" 	   // for creating new region id.
 #include "lego_util.h"             // for AWN_StidIntoSym, AWN_Add
 #include "minvariant.h"            // for Minvariant_Removal
-#include "prompf.h"
 #include "simd_util.h"
 #include "small_trips.h"           // for Remove_Unity_Trip_Loop
 
@@ -3183,11 +3182,6 @@ static WN* Version_Loop(WN* wn_loop)
   REDUCTION_MANAGER* rm = red_manager;
   WN_MAP version_map = WN_MAP_Create(&LNO_local_pool);
   WN* wn_copy = LWN_Copy_Tree(wn_loop, TRUE, LNO_Info_Map, TRUE, version_map);
-  if (Prompf_Info != NULL && Prompf_Info->Is_Enabled()) { 
-    STACK<WN*> st_old(&LNO_local_pool);
-    STACK<WN*> st_new(&LNO_local_pool);
-    Prompf_Assign_Ids(wn_loop, wn_copy, &st_old, &st_new, TRUE);
-  } 
   BOOL all_internal = WN_Rename_Duplicate_Labels(wn_loop, wn_copy,
     Current_Func_Node, &LNO_local_pool);
   Is_True(all_internal, ("external labels renamed"));
@@ -3232,11 +3226,6 @@ static WN* Version_Region(WN* region, WN *wn_loop)
   REDUCTION_MANAGER* rm = red_manager;
   WN_MAP version_map = WN_MAP_Create(&LNO_local_pool);
   WN* region_copy = LWN_Copy_Tree(region, TRUE, LNO_Info_Map, TRUE, version_map);
-  if (Prompf_Info != NULL && Prompf_Info->Is_Enabled()) { 
-    STACK<WN*> st_old(&LNO_local_pool);
-    STACK<WN*> st_new(&LNO_local_pool);
-    Prompf_Assign_Ids(region, region_copy, &st_old, &st_new, TRUE);
-  } 
   BOOL all_internal = WN_Rename_Duplicate_Labels(region, region_copy,
     Current_Func_Node, &LNO_local_pool);
   Is_True(all_internal, ("external labels renamed"));

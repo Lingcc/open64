@@ -658,7 +658,7 @@
 //                                         INT32 div/mod/rem operations
 //  TT_LNO_PARALLEL_DEBUG	0x00004000 debug parallelization
 //  TT_LNO_NO_TRANSPOSE	        0x00008000 no transpose optimization  
-//  TT_LNO_DEBUG_PROMPF	        0x00010000 debug PROMPF 
+//  [unused]                    0x00010000 (was TT_LNO_DEBUG_PROMPF)
 //  TT_LNO_DISABLE_SEFIN	0x00020000 disable finalization of scalar 
 //					     variables 
 //  TT_LNO_NO_PAD 		0x00040000 inhibit automatic padding of
@@ -1164,7 +1164,7 @@ inline REGION_INFO* Get_Region_Info(const WN* wn)
 #define TT_LNO_PARALLEL_DEBUG	    0x00004000
 #define TT_LNO_NO_TRANSPOSE	    0x00008000
 
-#define TT_LNO_DEBUG_PROMPF	    0x00010000
+// [unused]                         0x00010000 (was TT_LNO_DEBUG_PROMPF)
 #define TT_LNO_DISABLE_SEFIN	    0x00020000
 #define TT_LNO_NO_PAD 		    0x00040000
 #define TT_LNO_OMP_TRANSFORMS 	    0x00080000

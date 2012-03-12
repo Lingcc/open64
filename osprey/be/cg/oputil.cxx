@@ -82,7 +82,6 @@
 #include "erglob.h"
 #include "printsrc.h"
 
-#include "import.h"
 #include "opt_alias_interface.h"        /* for Print_alias_info */
 #include "cg.h"                         /* for Alias_Manager */
 
