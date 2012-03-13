@@ -881,7 +881,7 @@ extern BOOL CG_loop32;
 extern BOOL CG_compute_to;
 extern UINT64 CG_p2align_freq;
 extern UINT32 CG_p2align_max_skip_bytes;
-extern UINT32 CG_movnti;
+extern INT32 CG_movnti;
 extern BOOL CG_use_xortozero;
 extern BOOL CG_use_xortozero_Set;
 extern BOOL CG_use_incdec;

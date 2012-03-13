@@ -111,6 +111,8 @@
 #include "stblock.h" //for Base_Symbol_And_Offset_For_Addressing
 #include "be_symtab.h" //Preg_Lda
 
+#define UNCONDITIONAL_MOVNTI -1
+
 UINT32 CGTARG_branch_taken_penalty;
 BOOL CGTARG_branch_taken_penalty_overridden = FALSE;
 
@@ -377,9 +379,6 @@ UINT32 CGTARG_Mem_Ref_Bytes(const OP *memop)
       case TOP_vstsd:
       case TOP_vstsd_n32:
       case TOP_vstsdx:
-      case TOP_vstntsd:
-      case TOP_vstntsdx:
-      case TOP_vstntsdxx:
       case TOP_vstorelpd:
       case TOP_vdivxxxsd:
       case TOP_vfaddxxxsd:
@@ -3232,12 +3231,20 @@ static TOP Movnti_Top(TOP old_top)
     case TOP_stsd:      return TOP_stntsd; break;
     case TOP_stsdx:     return TOP_stntsdx; break;
     case TOP_stsdxx:    return TOP_stntsdxx; break;
-    case TOP_vstss:      return TOP_vstntss; break;
-    case TOP_vstssx:     return TOP_vstntssx; break;
-    case TOP_vstssxx:    return TOP_vstntssxx; break;
-    case TOP_vstsd:      return TOP_vstntsd; break;
-    case TOP_vstsdx:     return TOP_vstntsdx; break;
-    case TOP_vstsdxx:    return TOP_vstntsdxx; break;
+
+    /* following cases asserted by CG_movnti == UNCONDITIONAL_MOVNTI */
+    case TOP_stups:     return TOP_stntps; break;
+    case TOP_stupsx:    return TOP_stntpsx; break;
+    case TOP_stupsxx:   return TOP_stntpsxx; break;
+    case TOP_vstups:    return TOP_vstntps; break;
+    case TOP_vstupsx:   return TOP_vstntpsx; break;
+    case TOP_vstupsxx:  return TOP_vstntpsxx; break;
+    case TOP_stupd:     return TOP_stntpd; break;
+    case TOP_stupdx:    return TOP_stntpdx; break;
+    case TOP_stupdxx:   return TOP_stntpdxx; break;
+    case TOP_vstupd:    return TOP_vstntpd; break;
+    case TOP_vstupdx:   return TOP_vstntpdx; break;
+    case TOP_vstupdxx:  return TOP_vstntpdxx; break;
     }
    FmtAssert(FALSE,("Non-Temporal Store: not supported!"));
    return TOP_UNDEFINED;
@@ -3294,43 +3301,52 @@ void CGTARG_LOOP_Optimize( LOOP_DESCR* loop )
 {
   if(CG_movnti==0) return;
 
-  UINT32 trip_count = 0;
-  TN* trip_count_tn = CG_LOOP_Trip_Count(loop);
   BB* body = LOOP_DESCR_loophead(loop);
-
-  if( trip_count_tn != NULL &&
-      TN_is_constant(trip_count_tn) ){
-    trip_count = TN_value( trip_count_tn );
-
-  } else {
-    const ANNOTATION* annot = ANNOT_Get(BB_annotations(body), ANNOT_LOOPINFO);
-    const LOOPINFO* info = ANNOT_loopinfo(annot);
-
-    trip_count = WN_loop_trip_est(LOOPINFO_wn(info));
-  }
-
   OP* op = NULL;
-  INT64 size = 0;
 
-  Working_Set.Clear();
+  if (CG_movnti != UNCONDITIONAL_MOVNTI)
+  {
+    UINT32 trip_count = 0;
+    TN* trip_count_tn = CG_LOOP_Trip_Count(loop);
 
-  /* First, estimate the totol size (in bytes) that this loop will
-     bring to the cache.
-  */
-  FOR_ALL_BB_OPs_FWD( body, op ){
-    if(((OP_store( op ) && !TOP_is_nt_store(OP_code(op))) || //stores
-	  OP_load(op) ) && //loads
-      !Op_In_Working_Set(op)){ //that were not in the working set
-      size += CGTARG_Mem_Ref_Bytes(op);
+    if( trip_count_tn != NULL &&
+        TN_is_constant(trip_count_tn) ){
+      trip_count = TN_value( trip_count_tn );
+
+    } else {
+      const ANNOTATION* annot = ANNOT_Get(BB_annotations(body), ANNOT_LOOPINFO);
+      const LOOPINFO* info = NULL;
+      if (annot != NULL)
+        info = ANNOT_loopinfo(annot);
+      if (info != NULL)
+        trip_count = WN_loop_trip_est(LOOPINFO_wn(info));
     }
+
+    INT64 size = 0;
+
+    Working_Set.Clear();
+
+    /* First, estimate the totol size (in bytes) that this loop will
+       bring to the cache.
+    */
+    FOR_ALL_BB_OPs_FWD( body, op ){
+      if(((OP_store( op ) && !TOP_is_nt_store(OP_code(op))) || //stores
+  	  OP_load(op) ) && //loads
+        !Op_In_Working_Set(op)){ //that were not in the working set
+        size += CGTARG_Mem_Ref_Bytes(op);
+      }
+    }
+
+    size *= trip_count;
+
+    const INT64 cache_size = CG_movnti * 1024;
+
+    if( size < cache_size )
+      return;
   }
+  // if CG_movnti == UNCONDITIONAL_MOVNTI:  generate non-temporal stores
+  // unconditionally
 
-  size *= trip_count;
-
-  const INT64 cache_size = CG_movnti * 1024;
-
-  if( size < cache_size )
-    return;
   FOR_ALL_BB_OPs_FWD( body, op ){
     if( OP_prefetch( op ) ){
       /* Get rid of any prefetchw operation, because it "loads the prefetched
@@ -3395,6 +3411,17 @@ void CGTARG_LOOP_Optimize( LOOP_DESCR* loop )
          new_top = Movnti_Top(OP_code(op));
          break;
        }
+    case TOP_stups:
+    case TOP_stupsx:
+    case TOP_stupsxx:
+    case TOP_vstups:
+    case TOP_vstupsx:
+    case TOP_vstupsxx:
+       {
+         if (CG_movnti == UNCONDITIONAL_MOVNTI)
+           new_top = Movnti_Top(OP_code(op));
+         break;
+       }
     //SSE2 support
     case TOP_stapd:
     case TOP_stapdx:
@@ -3419,22 +3446,28 @@ void CGTARG_LOOP_Optimize( LOOP_DESCR* loop )
 	  new_top = Movnti_Top(OP_code(op));
          break;
        }
-    //SSE4a support
+    //SSE4a/SSE41 support
     case TOP_stss:
     case TOP_stssx:
     case TOP_stssxx:
     case TOP_stsd:
     case TOP_stsdx:
     case TOP_stsdxx:
-    case TOP_vstss:
-    case TOP_vstssx:
-    case TOP_vstssxx:
-    case TOP_vstsd:
-    case TOP_vstsdx:
-    case TOP_vstsdxx:
        { 
-         if(Is_Target_SSE4a())
+         if(Is_Target_SSE4a() || Is_Target_SSE41())
             new_top = Movnti_Top(OP_code(op));
+         break;
+       }
+    case TOP_stupd:
+    case TOP_stupdx:
+    case TOP_stupdxx:
+    case TOP_vstupd:
+    case TOP_vstupdx:
+    case TOP_vstupdxx:
+       {
+         if (CG_movnti == UNCONDITIONAL_MOVNTI &&
+             (Is_Target_SSE4a() || Is_Target_SSE41()))
+           new_top = Movnti_Top(OP_code(op));
          break;
        }
     }//end switch

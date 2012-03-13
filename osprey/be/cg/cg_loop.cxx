@@ -7442,6 +7442,9 @@ extern void *Record_And_Del_Loop_Region(LOOP_DESCR *loop, void *tmp);
 	CG_LOOP_Trace_Loop(loop, "*** Before SINGLE_BB_WHILELOOP_UNROLL ***");
 
       cg_loop.Build_CG_LOOP_Info(TRUE);
+#ifdef TARG_X8664
+      CGTARG_LOOP_Optimize(loop);
+#endif
       cg_loop.Determine_Unroll_Factor();
       Unroll_Dowhile_Loop(loop, cg_loop.Unroll_factor());
       cg_loop.Recompute_Liveness();
