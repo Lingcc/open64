@@ -3346,8 +3346,20 @@ Modify_Asm_String (char* asm_string, UINT32 position, bool memory,
 #endif
       if( base_ofst == 0 ){
 #if defined(TARG_X8664)
-	if( Is_Target_32bit() )
-	  sprintf( buf, "%s", name );
+        // open64.net bug951. 
+        // Format IA32 GOT symbol in Asm_String.
+	if( Is_Target_32bit() ) {
+          switch (TN_relocs(tn)) {
+          case TN_RELOC_IA32_GOT:
+            sprintf( buf, 
+                     "%s@GOT(%s)", 
+                     name, 
+                     int_reg_names[3][TN_register(Ebx_TN())- REGISTER_MIN]);
+            break;
+          default:
+            sprintf( buf, "%s", name);
+          }
+        }
 	else
 	  sprintf( buf, "%s(%%rip)", name );
 #else
@@ -3355,8 +3367,21 @@ Modify_Asm_String (char* asm_string, UINT32 position, bool memory,
 #endif
       } else
 #if defined(TARG_X8664)
-	if( Is_Target_32bit() )
-	  sprintf( buf, "%s+%d", name, (int)base_ofst );
+        // open64.net bug951.
+        // Format IA32 GOTOFF symbol in Asm_String.
+	if( Is_Target_32bit() ) {
+          switch (TN_relocs(tn)) {
+          case TN_RELOC_IA32_GOTOFF:
+            sprintf( buf, 
+                     "%s@GOTOFF+%d(%s)",
+                     name, 
+                     (int)base_ofst,
+                     int_reg_names[3][TN_register(Ebx_TN())- REGISTER_MIN]);
+            break;
+          default:
+            sprintf( buf, "%s+%d", name, (int)base_ofst );
+          }
+        }
 	else
 	  sprintf( buf, "%s+%d(%%rip)", name, (int)base_ofst );
 #else

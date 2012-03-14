@@ -4020,7 +4020,15 @@ TN* CGTARG_Process_Asm_m_constraint( WN* load, void** offset, OPS* ops )
 
   if( WN_operator(load) == OPR_LDA ){
     OP* lda_op = OPS_last( ops );
-    asm_opnd = OP_iadd(lda_op) ? OP_opnd( lda_op, 1 ) : OP_opnd( lda_op, 0 );
+    // open64.net bug951. On finding the symbol TN, don't miss the cases of:
+    //  TN :- ld32 GTN2(%rbx) (sym:base_sym +0)
+    //  TN :- lea32 GTN2(%rbx) (sym:base_sym+base_ofst)
+    if (Is_Target_32bit() && Gen_PIC_Shared) {
+      asm_opnd = OP_iadd(lda_op) ? OP_opnd( lda_op, 1 ) :
+        (OP_code(lda_op) == TOP_ldc32) ? OP_opnd( lda_op, 0) : OP_opnd( lda_op, 1);
+    } else {
+      asm_opnd = OP_iadd(lda_op) ? OP_opnd( lda_op, 1 ) : OP_opnd( lda_op, 0 );
+    }
     OPS_Remove_Op( ops, lda_op );
 
   } else if( WN_operator(load) == OPR_ADD ){
