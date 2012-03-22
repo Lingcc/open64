@@ -1267,29 +1267,17 @@ Exp_Ldst (
 	                        STB_section(base_sym) /* bug 10097 */)) ){
 	  FmtAssert(!ST_is_thread_local(base_sym),
 		    ("Exp_Ldst: thread-local storage NYI under PIC"));
-
-          // open64.net bug951.
-          // when base_ofst ! = 0, we generate 
-          // TN :- lea32 GTN2(%rbx) (sym:base_sym+base_ofst)
-          // instead of 
-          // tmp_TN :- ld32 GT2(%bx) (sym:base_sym + 0)
-          // TN :- lea32 tmp_TN base_ofst
-          // this is for consideration of facilitate restoring the register TN
-          // to symbol TN in ASM m constraint. 
-          // And also this reduces a temp TN.
-
-          if (base_ofst == 0)
-            Build_OP( TOP_ld32, tn, Ebx_TN(),
-                      Gen_Symbol_TN( base_sym, base_ofst, TN_RELOC_IA32_GOT ),
-                      &newops );
-          else
-            Build_OP( TOP_lea32, tn, Ebx_TN(),
-                      Gen_Symbol_TN( base_sym, base_ofst, TN_RELOC_IA32_GOTOFF ),
-                      &newops );
+          TN* tmp = base_ofst == 0 ? tn : Build_TN_Like(tn);
+          Build_OP( TOP_ld32, tmp, Ebx_TN(),
+		    Gen_Symbol_TN( base_sym, 0, TN_RELOC_IA32_GOT ),
+		    &newops );
 	  // got address should not alias
 	  Set_OP_no_alias(OPS_last(&newops));
 	  PU_References_GOT = TRUE;
 
+	  if( base_ofst != 0 ){
+	    Build_OP( TOP_lea32, tn, tmp, Gen_Literal_TN(base_ofst, 4), &newops );	      
+	  }
 	} else {
 	  Build_OP( TOP_ldc32, tn,
 		    Gen_Symbol_TN( base_sym, base_ofst, TN_RELOC_NONE ),

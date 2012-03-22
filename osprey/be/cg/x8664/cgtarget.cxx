@@ -4022,10 +4022,32 @@ TN* CGTARG_Process_Asm_m_constraint( WN* load, void** offset, OPS* ops )
     OP* lda_op = OPS_last( ops );
     // open64.net bug951. On finding the symbol TN, don't miss the cases of:
     //  TN :- ld32 GTN2(%rbx) (sym:base_sym +0)
-    //  TN :- lea32 GTN2(%rbx) (sym:base_sym+base_ofst)
+    // and 
+    //  TN_tmp :- ld32 GTN2(%rbx) (sym:base_sym +0)
+    //  TN :- lea32 TN_tmp ofst_TN
+    // result_sym of the first case is
+    // (sym:base_sym + 0), reloc: TN_RELOC_IA32_GOT
+    // result_sym of the latter case is
+    // (sym:base_sym + base_ofst), reloc: TN_RELOC_IA32_GOTOFF
+
     if (Is_Target_32bit() && Gen_PIC_Shared) {
-      asm_opnd = OP_iadd(lda_op) ? OP_opnd( lda_op, 1 ) :
-        (OP_code(lda_op) == TOP_ldc32) ? OP_opnd( lda_op, 0) : OP_opnd( lda_op, 1);
+      OP * prev_lda = OP_prev(lda_op);
+      if (OP_code(lda_op) == TOP_lea32 &&
+          prev_lda && 
+          OP_code(prev_lda) == TOP_ld32 &&
+          TN_is_constant(OP_opnd(lda_op, 1)) &&
+          TN_register(OP_opnd(lda_op, 0)) == TN_register(OP_result(prev_lda, 0)) &&
+          TN_is_symbol(OP_opnd(prev_lda, 1)) &&
+          TN_relocs(OP_opnd(prev_lda, 1)) == TN_RELOC_IA32_GOT) {
+        asm_opnd = Gen_Symbol_TN( TN_var(OP_opnd(prev_lda, 1)), 
+                                  TN_value(OP_opnd(lda_op, 1)), 
+                                  TN_RELOC_IA32_GOTOFF );
+        OPS_Remove_Op (ops, prev_lda);
+      } 
+      else if (OP_code(lda_op) == TOP_ldc32) 
+        asm_opnd = OP_opnd( lda_op, 0);
+      else
+        asm_opnd = OP_opnd( lda_op, 1 );
     } else {
       asm_opnd = OP_iadd(lda_op) ? OP_opnd( lda_op, 1 ) : OP_opnd( lda_op, 0 );
     }
