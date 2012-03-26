@@ -1542,6 +1542,10 @@ add_file_args (string_list_t *args, phases_t index)
 #endif
 		  add_string(args, "-g");	// bug 5990
 		}
+#if defined(TARG_X8664)
+                if (strcmp(target_cpu,"bdver1") == 0 )
+                  add_string(args, "-Wa,-mtune=bdver1");
+#endif
 		if (dashdash_flag)
 		  add_string(args,"--");
 		if (show_but_not_run)

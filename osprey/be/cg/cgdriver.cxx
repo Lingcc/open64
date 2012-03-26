@@ -1214,6 +1214,8 @@ static OPTION_DESC Options_CG[] = {
     0, 0, 0, &CG_use_short_form, NULL },
   { OVK_INT32,	OV_VISIBLE, TRUE, "p2align", "p2align",
     2, 0, 2,	&CG_p2align, NULL },
+  { OVK_BOOL,	OV_VISIBLE, TRUE, "p2align_split", "p2align_split",
+    2, 0, 2,	&CG_p2align_split, NULL },
   { OVK_BOOL,	OV_INTERNAL, TRUE, "loop32", "loop32",
     0, 0, 0,	&CG_loop32, NULL },
   { OVK_BOOL,	OV_INTERNAL, TRUE, "compute_to", "compute_to",

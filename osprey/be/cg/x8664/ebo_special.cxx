@@ -1481,6 +1481,7 @@ Convert_Imm_Add (OP *op, TN *tnr, TN *tn, INT64 imm_val,
 #if Is_True_On
   if (!(EBO_Opt_Mask & EBO_CONVERT_IMM_ADD)) return FALSE;
 #endif
+  OP *pred_op = (tninfo) ? tninfo->in_op : NULL;
   OP *new_op = NULL;
   TOP new_opcode;
   BOOL is_64bit = (TN_size(tnr) == 8);
@@ -1557,6 +1558,14 @@ Convert_Imm_Add (OP *op, TN *tnr, TN *tn, INT64 imm_val,
         valid_inc_dec = false;
 
       if (valid_inc_dec == false)
+        return FALSE;
+    }
+
+    if ( simplify_iadd ) {
+      // valid inc/dec conversion with like type input are fold opportunities
+      if ( pred_op && 
+           ( OP_code(op) == OP_code(pred_op) ) && 
+           ( tninfo->reference_count == 1 ) )
         return FALSE;
     }
 

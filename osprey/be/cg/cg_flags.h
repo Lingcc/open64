@@ -869,6 +869,7 @@ extern BOOL LOCS_Reduce_Prefetch;
 extern BOOL LOCS_Reduce_Prefetch_set;
 #endif
 extern INT32 CG_p2align;
+extern BOOL CG_p2align_split;
 #if defined(TARG_X8664) || defined(TARG_LOONGSON)
 extern INT32 CG_sse_load_execute;
 extern INT32 CG_load_execute;

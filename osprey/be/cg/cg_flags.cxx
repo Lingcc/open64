@@ -518,6 +518,7 @@ INT32 CG_p2align = 2;
 #else
 INT32 CG_p2align = 0;
 #endif
+BOOL CG_p2align_split = FALSE;
 BOOL CG_loop32 = FALSE;
 BOOL CG_compute_to = FALSE;
 BOOL CG_valgrind_friendly = TRUE;

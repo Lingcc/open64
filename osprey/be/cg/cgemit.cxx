@@ -1796,12 +1796,42 @@ static void r_assemble_list (
           fputs ("\t.p2align 3,,\n", Asm_File);
           break;
         case 2:
-          fputs ("\t.p2align 5,,\n", Asm_File);
+          fputs ("\t.p2align 4,,\n", Asm_File);
           break;
         default:
           break;
       }
       return;
+    } else if (OP_dpadd(op)) {
+      TOP top = OP_code(op);
+      INT num_bytes_to_padd = OP_dpadd(op);
+      if (num_bytes_to_padd > 3)
+        num_bytes_to_padd = 0;
+      if ((OP_x86_style(op)     || 
+           OP_memory(op)        || 
+           OP_cond_move(op)     || 
+           TOP_is_move_ext(top) ||
+           OP_icmp(op)) && 
+          (TOP_is_avx(top) == false)) {
+        if ((OP_memory(op) == false) && (OP_load_exe(op) == false)) {
+          for (i = 0; i < num_bytes_to_padd; i++)
+	    fprintf(Asm_File, "\t%s %s\n", AS_BYTE, AS_PD2);
+        } else {
+          for (i = 0; i < num_bytes_to_padd; i++)
+	    fprintf(Asm_File, "\t%s %s\n", AS_BYTE, AS_PD1);
+        }
+      } else if (top == TOP_lea32   || top == TOP_lea64  ||
+                 top == TOP_leax32  || top == TOP_leax64 ||
+                 top == TOP_leaxx32 || top == TOP_leaxx64 ) {
+        for (i = 0; i < num_bytes_to_padd; i++)
+	  fprintf(Asm_File, "\t%s %s\n", AS_BYTE, AS_PD1);
+      } else if (top == TOP_mov32   || top == TOP_mov64 ) {
+        for (i = 0; i < num_bytes_to_padd; i++)
+	  fprintf(Asm_File, "\t%s %s\n", AS_BYTE, AS_PD2);
+      } else if (TOP_is_avx(top)) {
+        for (i = 0; i < num_bytes_to_padd; i++)
+	  fprintf(Asm_File, "\t%s %s\n", AS_BYTE, AS_PD1);
+      }
     }
   }
 #endif
@@ -4738,6 +4768,16 @@ EMT_Assemble_BB ( BB *bb, WN *rwn )
   }
 #endif
 
+#if defined(TARG_X8664)
+  if (BB_dispatch(bb)){
+    if (CG_p2align == 2){
+      fprintf(Asm_File, "\t.p2align 5,,\n");
+    } else {
+      fprintf(Asm_File, "\t.p2align 4,,\n");
+    }
+  }
+#endif
+
 #ifdef TARG_IA64
   INT bb_cycle_count = 0;
   ROTATING_KERNEL_INFO *info ;
@@ -4837,14 +4877,18 @@ EMT_Assemble_BB ( BB *bb, WN *rwn )
     }
     if (!(Is_Target_Barcelona() || Is_Target_Orochi() || Is_Target_Wolfdale()) || !CG_p2align)
     {
-    // bug 2191
-    if (branch_in_freq > 100000000.0 &&
-       branch_in_ratio > 50.0) 
-          fprintf(Asm_File, "\t.p2align 4,,\n");
+      // bug 2191
+      if (branch_in_freq > 100000000.0 &&
+         !BB_dispatch(bb) &&
+         branch_in_ratio > 50.0) {
+        if (Is_Target_Orochi() && CG_p2align_split)
+          fprintf(Asm_File, "\t.p2align 3,,\n");
+        fprintf(Asm_File, "\t.p2align 4,,\n");
+      }
     }
-    else if (branch_in_ratio > 0.0)
+    else if ((branch_in_ratio > 0.0) && !BB_dispatch(bb))
     {
-      int max_skip_bytes;
+      int max_skip_bytes = 0;
    
       if (CG_p2align == 2){ 
       if (branch_in_ratio > 50.0)
@@ -4872,12 +4916,11 @@ EMT_Assemble_BB ( BB *bb, WN *rwn )
  *     when there is none biased jump on condition instructions inside. If so, 
  *     it is not desirable to align the loop head. 
  */      
-      if(max_skip_bytes > 0)
-      {
-        if(!Is_Target_Barcelona() || CG_p2align != 2){
+      if (max_skip_bytes > 0) {
+        if (!Is_Target_Barcelona() || CG_p2align != 2){
           if (max_skip_bytes > 15)
 	    max_skip_bytes = 15;	
-          if(Is_Target_Orochi())
+          if (Is_Target_Orochi() && CG_p2align_split)
             fprintf(Asm_File, "\t.p2align 3,,\n");
           fprintf(Asm_File, "\t.p2align 4,,%d\n", max_skip_bytes);
         }

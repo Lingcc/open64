@@ -5430,7 +5430,11 @@ Expand_Fast_Sqrt (TN *result, TN *src, TYPE_ID mtype, OPS *ops)
   if ( mtype == MTYPE_F4 ) {
     Build_OP( TOP_xzero32, tmp0, ops);
     Build_OP( TOP_cmpneqss, tmp1, tmp0, src, ops );
-    Build_OP( TOP_rsqrtss, tmp2, src, ops );
+    if ( Is_Target_Orochi() && Is_Target_AVX() ) {
+      Build_OP( TOP_rsqrtss, tmp2, src, src, ops );
+    } else {
+      Build_OP( TOP_rsqrtss, tmp2, src, ops );
+    }
     Build_OP( TOP_fand128v32, tmp3, tmp2, tmp1, ops );
     Build_OP( TOP_mulss, tmp4, tmp3, src, ops );
     Build_OP( TOP_mulss, tmp5, tmp4, tmp3, ops );
@@ -5498,8 +5502,12 @@ Expand_Sqrt (TN *result, TN *src, TYPE_ID mtype, OPS *ops)
       Build_OP( TOP_fsqrt, result, src, ops);
     }
     else {
-      Build_OP( mtype == MTYPE_F8 ? TOP_sqrtsd : TOP_sqrtss, 
-                result, src, ops);
+      TOP top = (mtype == MTYPE_F8) ? TOP_sqrtsd : TOP_sqrtss;
+      if ( Is_Target_Orochi() && Is_Target_AVX() ) {
+        Build_OP( top, result, src, src, ops );
+      } else {
+        Build_OP( top, result, src, ops );
+      }
     }
     break;
   }
@@ -6151,8 +6159,12 @@ void Expand_Flop( OPCODE opcode, TN *result, TN *src1, TN *src2, TN *src3, OPS *
     return;
   case OPC_F4RSQRT:
   case OPC_F4ATOMIC_RSQRT:	// bug 6123
-    opc = TOP_rsqrtss;
-    break;
+    if ( Is_Target_Orochi() && Is_Target_AVX() ) {
+      Build_OP( TOP_rsqrtss, result, src1, src1, ops );
+    } else {
+      Build_OP( TOP_rsqrtss, result, src1, ops );
+    }
+    return;
   case OPC_V16F4RSQRT:
   case OPC_V16F4ATOMIC_RSQRT:	// bug 6123
     opc = TOP_frsqrt128v32;
@@ -8069,34 +8081,38 @@ Exp_Intrinsic_Op (INTRINSIC id, TN *result, TN *op0, TN *op1, TN *op2, TN *op3, 
     Build_OP( TOP_frcp128v32, result, op0, ops );
     break;
   case INTRN_RSQRTPS:
-    if (Is_Target_Orochi() && Is_Target_AVX()) {
-      TN *xzero = Build_TN_Like(result);
-      Build_OP (TOP_xzero128v32, xzero, ops);
-      Build_OP( TOP_frsqrt128v32, result, op0, xzero, ops );
-    } else {
-      Build_OP( TOP_frsqrt128v32, result, op0, ops );
-    }
+    Build_OP( TOP_frsqrt128v32, result, op0, ops );
     break;
   case INTRN_SQRTPS:
-    if (Is_Target_Orochi() && Is_Target_AVX()) {
-      TN *xzero = Build_TN_Like(result);
-      Build_OP (TOP_xzero128v32, xzero, ops);
-      Build_OP( TOP_fsqrt128v32, result, op0, xzero, ops );
-    } else {
-      Build_OP( TOP_fsqrt128v32, result, op0, ops );
-    }
+    Build_OP( TOP_fsqrt128v32, result, op0, ops );
     break;
   case INTRN_RCPSS:
-    Build_OP( TOP_rcpss, result, op0, ops );
+    if ( Is_Target_Orochi() && Is_Target_AVX() ) {
+      Build_OP( TOP_rcpss, result, op0, op0, ops );
+    } else {
+      Build_OP( TOP_rcpss, result, op0, ops );
+    }
     break;
   case INTRN_RSQRTSS:
-    Build_OP( TOP_rsqrtss, result, op0, ops );
+    if ( Is_Target_Orochi() && Is_Target_AVX() ) {
+      Build_OP( TOP_rsqrtss, result, op0, op0, ops );
+    } else {
+      Build_OP( TOP_rsqrtss, result, op0, ops );
+    }
     break;
   case INTRN_SQRTSD:
-    Build_OP( TOP_sqrtsd, result, op0, ops );
+    if ( Is_Target_Orochi() && Is_Target_AVX() ) {
+      Build_OP( TOP_sqrtsd, result, op0, op0, ops );
+    } else {
+      Build_OP( TOP_sqrtsd, result, op0, ops );
+    }
     break;
   case INTRN_SQRTSS:
-    Build_OP( TOP_sqrtss, result, op0, ops );
+    if ( Is_Target_Orochi() && Is_Target_AVX() ) {
+      Build_OP( TOP_sqrtss, result, op0, op0, ops );
+    } else {
+      Build_OP( TOP_sqrtss, result, op0, ops );
+    }
     break;
   case INTRN_SHUFPS:
     Build_OP( TOP_shufps, result, op0, op1, op2, ops );

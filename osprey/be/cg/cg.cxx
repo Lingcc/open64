@@ -1732,7 +1732,7 @@ extern void Generate_Return_Address(void);
 #endif
   IGLS_Schedule_Region (FALSE /* after register allocation */);
   // use cflow to handle branch fusing cmp/jcc for Orochi and greater.
-  if (Is_Target_Orochi() && CG_branch_fuse && !CG_dispatch_schedule) {
+  if (Is_Target_Orochi() && CG_branch_fuse ) {
     CFLOW_Optimize(CFLOW_BR_FUSE, "CFLOW (fifth pass)");
   }
 #endif
@@ -1985,7 +1985,10 @@ extern void Generate_Return_Address(void);
     if (Is_Target_Orochi() == TRUE)
     {
       extern void CG_Sched( MEM_POOL*, BOOL );
-      CG_Sched( &MEM_local_pool, Get_Trace( TP_SCHED, 1 ) );
+      Set_Error_Phase("Dispatch Scheduling");
+      Start_Timer(T_Dispatch_Sched_CU);
+      CG_Sched( &MEM_local_pool, Get_Trace( TP_DSCHED, 1 ) );
+      Stop_Timer(T_Dispatch_Sched_CU);
     }
 #endif
 
