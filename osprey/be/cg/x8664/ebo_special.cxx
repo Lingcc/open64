@@ -6150,7 +6150,7 @@ static ST *get_addr_symbol(OP *op)
   WN *mem_wn = (WN*) OP_MAP_Get(OP_to_WN_map, op);
   if (mem_wn) {
     POINTS_TO *pt = Points_to(Alias_Manager, mem_wn);
-    if (pt->Expr_kind() == EXPR_IS_ADDR && pt->Base_kind() == BASE_IS_FIXED) {
+    if (pt->Expr_kind() == EXPR_IS_ADDR && pt->Base_is_fixed()) {
       st = pt->Base();
     } else if (pt->F_param() && pt->Based_sym() != NULL) {
       st = pt->Based_sym();
@@ -8874,7 +8874,7 @@ BOOL EBO_Opt_Const_Array( OP* mem_op,
     return ret_val;
   }
 
-  if (load_data && load_data->Base()) {
+  if (load_data && load_data->Base_is_fixed()) {
     ST *load_sym = load_data->Base();
 
     // we can only proceed when processing vars
