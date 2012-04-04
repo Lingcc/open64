@@ -7623,6 +7623,8 @@ static void fix_compare_binding (LOOP_DESCR* loop,
 void Counter_Merge (char *Cur_PU_Name) {
   GRA_LIVE_Recalc_Liveness (NULL);
   MEM_POOL loop_descr_pool;
+
+  memset(&loop_descr_pool, 0, sizeof loop_descr_pool);
   MEM_POOL_Initialize(&loop_descr_pool, "loop_descriptors", TRUE);
   MEM_POOL_Push (&loop_descr_pool);
   Calculate_Dominators();
@@ -7654,9 +7656,14 @@ void Counter_Merge (char *Cur_PU_Name) {
       // 
       GTN_SET* otherliveins;
       otherliveins = NULL;
-      MEM_POOL merge_counter_pool;
-      MEM_POOL_Initialize(&merge_counter_pool, 
-            "loop_descriptors", TRUE);
+      static MEM_POOL merge_counter_pool;
+      static BOOL merge_counter_pool_init;
+
+      if (! merge_counter_pool_init) {
+        merge_counter_pool_init = TRUE;
+        MEM_POOL_Initialize(&merge_counter_pool, 
+                            "loop_descriptors", TRUE);
+      }
       MEM_POOL_Push (&merge_counter_pool);
 
       // We collect the live-ins of successors of the loop BBs
@@ -9840,9 +9847,13 @@ static BOOL Is_Benefitial_To_Load_Exec_Float_OP( OP *ld_op, OP *alu_op )
     INT *regs_in_use = (INT*)alloca(sizeof(INT) * (len+1));
     mINT8 fatpoint[ISA_REGISTER_CLASS_MAX+1];
     TN_MAP conflict_map;
+    static MEM_POOL load_exe_pool;
+    static BOOL load_exe_pool_init;
 
-    MEM_POOL load_exe_pool;
-    MEM_POOL_Initialize(&load_exe_pool, "live_range_info", TRUE);
+    if (! load_exe_pool_init) {
+      load_exe_pool_init = TRUE;
+      MEM_POOL_Initialize(&load_exe_pool, "live_range_info", TRUE);
+    }
 
     MEM_POOL_Push(&load_exe_pool);
     LRA_Estimate_Fat_Points(bb, fatpoint, regs_in_use, &load_exe_pool);
@@ -9901,9 +9912,13 @@ BOOL EBO_Disassociate_FMA( OP* alu_op )
     TN_MAP conflict_map;
     TOP mul_top;
     TOP arith_top;
+    static MEM_POOL fma_exe_pool;
+    static BOOL fma_exe_pool_init;
 
-    MEM_POOL fma_exe_pool;
-    MEM_POOL_Initialize(&fma_exe_pool, "live_range_info", TRUE);
+    if (! fma_exe_pool_init) {
+      fma_exe_pool_init = TRUE;
+      MEM_POOL_Initialize(&fma_exe_pool, "live_range_info", TRUE);
+    }
 
     MEM_POOL_Push(&fma_exe_pool);
     LRA_Estimate_Fat_Points(bb, fatpoint, regs_in_use, &fma_exe_pool);
