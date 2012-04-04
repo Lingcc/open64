@@ -1963,7 +1963,33 @@ void DSP_SCH::Compute_Insn_Size( OP *op )
       if( TN_is_register(opnd) ){
         if( ( TN_register_class(opnd) == ISA_REGISTER_CLASS_integer ) || 
             ( TN_register_class(opnd) == ISA_REGISTER_CLASS_float ) ) {
-          if( has_modrm == false ){
+          bool need_modrm = true;
+          // TOP_adci64 TOP_sbbi64 are not valid TOPs. Should they be?
+          if (TN_register(opnd) == RAX) {
+            switch(top) {
+            case TOP_adci32:
+            case TOP_addi32:
+            case TOP_addi64:
+            case TOP_andi32:
+            case TOP_andi64:
+            case TOP_cmpi32:
+            case TOP_cmpi64:
+            case TOP_ori32:
+            case TOP_ori64:
+            case TOP_sbbi32:
+            case TOP_subi32:
+            case TOP_subi64:
+            case TOP_testi32:
+            case TOP_testi64:
+            case TOP_xori32:
+            case TOP_xori64:
+              need_modrm = false;
+              break;
+            default:
+              ;
+            }
+          }
+          if( need_modrm && has_modrm == false ){
             has_modrm = true;
             insn_size++;
             break;
