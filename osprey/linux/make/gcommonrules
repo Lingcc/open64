@@ -237,9 +237,6 @@ make_deps:
 ifeq ($(BUILD_TARGET), NVISA)
 make_libdeps :
 	-@cat *.d > $(MKDEPFILE)
-else ifeq ($(BUILD_TARGET), X8664)
-make_libdeps :
-	-@cat *.d > $(MKDEPFILE)
 else
 # make dependencies be for library(foo.o) not for foo.o,
 # thus we don't need to preserve intermediate .o files.
