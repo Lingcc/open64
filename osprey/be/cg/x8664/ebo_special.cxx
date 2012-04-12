@@ -10255,6 +10255,11 @@ BOOL EBO_Load_Execution( OP* alu_op,
     return Process_Side_Effects(opnd_tn, actual_tninfo, rval, opnds_swapped);
   }
 
+  // we only want one reaching use in this block for a cmp peep
+  if( EBO_flow_safe && ( load_uses > 1 ) ) {
+    return Process_Side_Effects(opnd_tn, actual_tninfo, rval, opnds_swapped);
+  }
+
   // If load is volatile, replace with exactly one load-exe OP, in order to
   // maintain the same number of memory accesses.
   if (OP_volatile(ld_op) &&

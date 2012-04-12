@@ -1664,8 +1664,9 @@ void Exp_Deposit_Bits2(TYPE_ID rtype, TYPE_ID desc, UINT bit_offset, UINT bit_si
     		  FALSE, ops );
   }
 
-  Expand_Binary_And( tgt_tn, tmp2_tn, src1_tn, rtype, ops );
-  Expand_Binary_Or( tgt_tn, tgt_tn, tmp1_tn, rtype, ops );
+  TN* tmp = Build_TN_Like(tgt_tn);
+  Expand_Binary_And( tmp, tmp2_tn, src1_tn, rtype, ops );
+  Expand_Binary_Or( tgt_tn, tmp, tmp1_tn, rtype, ops );
 }
 
 /* ======================================================================

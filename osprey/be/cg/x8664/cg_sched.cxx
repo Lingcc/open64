@@ -379,7 +379,7 @@ public:
       }
     }
 
-    return Resource_Table[c]->resources[cur_res][dispatch_unit];
+    return Resource_Table[clock]->resources[cur_res][dispatch_unit];
   }
 
   int  Dispatched_Ops( int c ) { return Resource_Table[c]->dispatched_ops; }
@@ -835,8 +835,7 @@ bool MRT::Probe_Resources( int cycle, OP* op, int dispatch_unit, bool take_it )
   const TOP top = OP_code(op);
   Resource_Table_Entry* entry = Resource_Table[cycle];
 
-  const ICU res = (take_it) ? cur_res : 
-                    Lookup_Property_By_Pipeinfo( op, cycle, true );
+  const ICU res = Lookup_Property_By_Pipeinfo( op, cycle, true );
 
   if( !entry->resources[res][dispatch_unit] )
     return false;
@@ -857,7 +856,7 @@ void MRT::Reserve_Resources( OP* op, int cycle )
   OPR* opr = Get_OPR( op );
   const int dispatch_unit = Get_Dispatch_Unit( op, cycle, false );
 
-  if( !Probe_Resources( OPR_issue_time(opr), op, dispatch_unit, true ) ){
+  if( !Probe_Resources( cycle, op, dispatch_unit, true ) ){
     ASSERT( false );
   }
 

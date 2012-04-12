@@ -1973,12 +1973,6 @@ static void Init_OP_Name()
   OP_Name[TOP_vstntps] = "vmovntps";
   OP_Name[TOP_vstntpsx] = "vmovntps";
   OP_Name[TOP_vstntpsxx] = "vmovntps";
-  OP_Name[TOP_vstntsd] = "vmovntsd";
-  OP_Name[TOP_vstntsdx] = "vmovntsd";
-  OP_Name[TOP_vstntsdxx] = "vmovntsd";
-  OP_Name[TOP_vstntss] = "vmovntss";
-  OP_Name[TOP_vstntssx] = "vmovntss";
-  OP_Name[TOP_vstntssxx] = "vmovntss";
   OP_Name[TOP_vldlpd] = "vmovsd";
   OP_Name[TOP_vldlpdx] = "vmovsd";
   OP_Name[TOP_vldlpdxx] = "vmovsd";
