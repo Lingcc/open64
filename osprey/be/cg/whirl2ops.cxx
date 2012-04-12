@@ -2775,6 +2775,19 @@ Handle_STID (WN *stid, OPCODE opcode)
 	TN* result_hi = Get_TN_Pair( result );
 	Expand_Immediate( result_hi, Gen_Literal_TN(0,4), FALSE, &New_OPs );
       }
+      
+      // open64.net bug952. 
+      // When the kid is 64bit result with paired TN but the stid_type
+      // is 4byte size or less, We delete the useless higher 32bit tn 
+      // by unpair the result. this will help pass the pair check in the 
+      // later expansion routines.
+
+      if (OP_NEED_PAIR(kid0_type) &&
+          Get_TN_Pair(result) != NULL &&
+          MTYPE_byte_size(stid_type) < MTYPE_byte_size(kid0_type)) {
+        Delete_TN_Pair(result);
+      }
+
 #endif // TARG_X8664
 
 #endif // IA_32

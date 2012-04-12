@@ -282,6 +282,11 @@ TN* Get_TN_Pair( TN* key )
   return pair;
 }
 
+void Delete_TN_Pair( TN *key) 
+{
+  Is_True( Get_TN_Pair( key ) != NULL, ("Delete_TN_Pair: higher 32-bit is NULL") );
+  TN_MAP_Set( _TN_Pair_table, key, NULL );
+}
 
 void Create_TN_Pair( TN* key, TN* pair )
 {
