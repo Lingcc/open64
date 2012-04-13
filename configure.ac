@@ -255,6 +255,7 @@ case "$target" in
 		;;
 	powerpc-*-linux*)
 		MACHINE_TYPE=PPC32
+		CROSS_TARGET="$target"
 		BUILD_ABI=I32BIT
 		BUILD_ARCH=IA32
 		BUILD_HOST=IA32
@@ -348,6 +349,7 @@ export GCC_CONFIGURE_CFLAGS
 
 # Variables to replace in the configurable files.
 AC_SUBST([MACHINE_TYPE])
+AC_SUBST([CROSS_TARGET])
 AC_SUBST([BUILD_ABI])
 AC_SUBST([BUILD_ARCH])
 AC_SUBST([BUILD_HOST])

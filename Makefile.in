@@ -354,14 +354,19 @@ install:
 	export TOP_SRCDIR=$(TOP_SRCDIR); \
 		$(TOP_SRCDIR)/INSTALL.cross.sl @abs_top_builddir@
 else
-ifeq ($(BUILD_TARGET), PPC32)
-install:
-	export TOOLROOT=@prefix@; \
-	export TOP_SRCDIR=$(TOP_SRCDIR); \
-		$(TOP_SRCDIR)/INSTALL.cross.ppc @abs_top_builddir@ @abs_top_srcdir@
-else
 install: install_fe install_compiler
 
+ifeq ($(BUILD_TARGET), PPC32)
+install_fe:
+	$(MAKE) -C $(GNUFE_BUILD_DIR)/gcc \
+	    install-common
+	$(MAKE) -C $(GNUFE_BUILD_DIR)/gcc \
+	    install-headers
+	$(MAKE) -C $(GNUFE_BUILD_DIR)/gcc \
+	    install-cpp
+	$(MAKE) -C $(GNUFE_BUILD_DIR)/gcc \
+	    install-driver	    
+else
 install_fe:
 	$(MAKE) -C $(GNUFE_BUILD_DIR)/gcc \
 	    install-common
@@ -375,12 +380,12 @@ install_fe:
 	    install-driver
 	$(MAKE) -C $(GNUFE_BUILD_DIR)/$(GNUFE_BUILD_HOST)/libstdc++-v3 \
 	    install
+endif
 
 install_compiler:
 	export TOOLROOT=@prefix@; \
 	export TOP_SRCDIR=$(TOP_SRCDIR); \
-		$(TOP_SRCDIR)/install_compiler.sh $(MACHINE_TYPE) $(if $(BUILD_FORTRAN),"YES","NO")
-endif
+		$(TOP_SRCDIR)/install_compiler.sh $(MACHINE_TYPE) $(if $(BUILD_FORTRAN),"YES","NO") @CROSS_TARGET@ 
 endif
 install-cross:
 	export TOOLROOT=@prefix@; $(TOP_SRCDIR)/install_compiler.sh ia64-cross $(if $(BUILD_FORTRAN),"YES","NO")
