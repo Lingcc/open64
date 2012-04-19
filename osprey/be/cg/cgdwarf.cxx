@@ -3701,8 +3701,16 @@ Cg_Dwarf_Output_Asm_Bytes_Sym_Relocs (FILE                 *asm_file,
 #ifdef TARG_X8664
       // don't want to affect other sections, although they may also need
       // to be updated under fPIC
+      
+      // open64.net bug783.
+      // Since ".debug_frame" also use PC relative addressing
+      // R_X86_64_PC32/R_386_PC32
+      // in the relocating for symbols, we should not miss them.
+      // Otherwise, wrong relocation generated.
+
       bool gen_pic = ((Gen_PIC_Call_Shared || Gen_PIC_Shared) &&
-      		       !strcmp (section_name, EH_FRAME_SECTNAME));
+                      (!strcmp (section_name, EH_FRAME_SECTNAME) ||
+                       !strcmp (section_name, DEBUG_FRAME_SECTNAME)));
 #endif
       switch (reloc_buffer[k].drd_type) {
       case dwarf_drt_none:
