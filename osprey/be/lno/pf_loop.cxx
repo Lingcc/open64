@@ -999,6 +999,9 @@ void PF_LOOPNODE::Process_Loop () {
 	  LNO_Num_Iters < 100)))
       single_small_trip_loop = TRUE;
   }
+  if (dli->Loop_Align_Peeled && !dli->Loop_Vectorized)
+    single_small_trip_loop = TRUE;
+
   if ((LNO_Run_Prefetch > SOME_PREFETCH || 
        (LNO_Run_Prefetch == SOME_PREFETCH && !Is_Multi_BB (w))) &&
 //      !simple_copy_loop && // bug 8560 disable this

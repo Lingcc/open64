@@ -4699,6 +4699,14 @@ Emit_Loop_Note(BB *bb, FILE *file)
 	: ", nesting depth: %d, %siterations: %lld";
 
       fprintf (file, fmt, depth, estimated, trip_count);
+
+      if (LOOPINFO_vectorized(info)) {
+        fprintf (file, "\n #<loop> vectorized");
+        if (LOOPINFO_align_peeled(info))
+          fprintf (file, "\n #<loop> vector loop : peeled for alignment");
+      } else if (LOOPINFO_align_peeled(info)) {
+        fprintf (file, "\n #<loop> scalar loop : peeled iter to align");
+      }
     }
 
     fputc ('\n', file);

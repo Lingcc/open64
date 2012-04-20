@@ -7403,6 +7403,7 @@ static void Expand_Statement (WN *stmt)
       LOOPINFO_trip_count_tn(info) = trip_tn;
       LOOPINFO_multiversion(info) = WN_Loop_Multiversion_Alias(loop_info);
       LOOPINFO_vectorized(info) = WN_Loop_Vectorized(loop_info);
+      LOOPINFO_align_peeled(info) = WN_Loop_Align_Peeled(loop_info);
 
 #ifndef TARG_NVISA
       if (!CG_PU_Has_Feedback && WN_loop_trip_est(loop_info) == 0)

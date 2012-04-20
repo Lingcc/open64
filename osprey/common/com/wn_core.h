@@ -1402,6 +1402,9 @@ inline INT64 WN_Get_Linenum(const WN *wn)
 /* Is the loop vectorized in Simd */
 #define WN_LOOP_VECTORIZED	0x10000
 
+/* Is the loop align peeled in Simd */
+#define WN_LOOP_ALIGN_PEELED	0x20000
+
 /* Is the loop an innermost loop */
 #define WN_Loop_Innermost(x)		(WN_loop_flag(x) & WN_LOOP_INNERMOST)
 #define WN_Set_Loop_Innermost(x)	(WN_loop_flag(x) |= WN_LOOP_INNERMOST)
@@ -1474,6 +1477,16 @@ inline INT64 WN_Get_Linenum(const WN *wn)
   (WN_loop_flag(x) |= WN_LOOP_VECTORIZED)
 #define WN_Reset_Vectorized(x) \
   (WN_loop_flag(x) &= ~WN_LOOP_VECTORIZED)
+
+/* Mark the fact that we peeled a loop for alignment so that the optimizer
+ * and code generator can make use it.
+ */
+#define WN_Loop_Align_Peeled(x) \
+  (WN_loop_flag(x) & WN_LOOP_ALIGN_PEELED)
+#define WN_Set_Align_Peeled(x) \
+  (WN_loop_flag(x) |= WN_LOOP_ALIGN_PEELED)
+#define WN_Reset_Align_Peeled(x) \
+  (WN_loop_flag(x) &= ~WN_LOOP_ALIGN_PEELED)
 
 #define WN_LABEL_HANDLER_BEGIN 0x2
 #define WN_Label_Is_Handler_Begin(x)	   (WN_label_flag(x) & \
