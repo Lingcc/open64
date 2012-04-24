@@ -3897,7 +3897,7 @@ void Redundancy_Elimination()
       BOOL done = FALSE;
       INT copy_operand = CGTARG_Copy_Operand(op);
       if (copy_operand >= 0) {
-	// Other ops could be rendered uselesss by the shift removal.
+	// Other ops could be rendered useless by the shift removal.
 	// Example:
 	//   TN969 :- srl TN1($0) (0x3) ;
 	//   TN969 :- xor TN969<defopnd> TN916 ; 
@@ -9176,7 +9176,7 @@ BOOL EBO_Process_SSE5_Load_Execute(TOP new_top,
                                    EBO_TN_INFO** actual_tninfo)
 {
   // use the mul memopnd form if the add form is not present
-  if ((idx != 2) && EBO_Is_FMA4(alu_op)) {
+  if ((idx != 2) && EBO_Is_FMA4(OP_code(alu_op))) {
     Addr_Mode_Group *group = Top_To_Addr_Mode_Group[new_top];
     new_top = EBO_Reset_Top(group->base_mode, mode);
   }
@@ -9505,9 +9505,8 @@ BOOL EBO_Process_SSE5_Load_Execute(TOP new_top,
 }
 
 
-BOOL EBO_Is_FMA3( OP* alu_op)
+BOOL EBO_Is_FMA3( TOP top )
 {
-  const TOP top = OP_code(alu_op);
   BOOL ret_val;
 
   switch (top) {
@@ -9591,9 +9590,84 @@ BOOL EBO_Is_FMA3( OP* alu_op)
 }
 
 
-BOOL EBO_Is_FMA4( OP* alu_op)
+TOP EBO_Translate_FMA_4_to_3( OP* alu_op )
 {
   const TOP top = OP_code(alu_op);
+  TOP new_top;
+
+  switch (top) {
+  case TOP_vfmaddss:
+    new_top = TOP_xfmadd213ss;
+    break;
+  case TOP_vfmaddsd:
+    new_top = TOP_xfmadd213sd;
+    break;
+  case TOP_vfmaddps:
+    new_top = TOP_xfmadd213ps;
+    break;
+  case TOP_vfmaddpd:
+    new_top = TOP_xfmadd213pd;
+    break;
+  case TOP_vfmaddsubps:
+    new_top = TOP_xfmaddsub213ps;
+    break;
+  case TOP_vfmaddsubpd:
+    new_top = TOP_xfmaddsub213pd;
+    break;
+  case TOP_vfmsubss:
+    new_top = TOP_xfmsub213ss;
+    break;
+  case TOP_vfmsubsd:
+    new_top = TOP_xfmsub213sd;
+    break;
+  case TOP_vfmsubps:
+    new_top = TOP_xfmsub213ps;
+    break;
+  case TOP_vfmsubpd:
+    new_top = TOP_xfmsub213pd;
+    break;
+  case TOP_vfmsubaddps:
+    new_top = TOP_xfmsubadd213ps;
+    break;
+  case TOP_vfmsubaddpd:
+    new_top = TOP_xfmsubadd213pd;
+    break;
+  case TOP_vfnmaddss:
+    new_top = TOP_xfnmadd213ss;
+    break;
+  case TOP_vfnmaddsd:
+    new_top = TOP_xfnmadd213sd;
+    break;
+  case TOP_vfnmaddps:
+    new_top = TOP_xfnmadd213ps;
+    break;
+  case TOP_vfnmaddpd:
+    new_top = TOP_xfnmadd213pd;
+    break;
+  case TOP_vfnmsubss:
+    new_top = TOP_xfnmsub213ss;
+    break;
+  case TOP_vfnmsubsd:
+    new_top = TOP_xfnmsub213sd;
+    break;
+  case TOP_vfnmsubps:
+    new_top = TOP_xfnmsub213ps;
+    break;
+  case TOP_vfnmsubpd:
+    new_top = TOP_xfnmsub213pd;
+    break;
+
+  default:
+    new_top = TOP_UNDEFINED;
+    break;
+  }
+
+  return new_top;
+}
+
+
+BOOL EBO_Is_FMA4( TOP top )
+{
   BOOL ret_val;
 
   switch (top) {
@@ -9630,9 +9704,8 @@ BOOL EBO_Is_FMA4( OP* alu_op)
   return ret_val;
 }
 
-BOOL EBO_Is_FMA3_NEG( OP* alu_op)
+BOOL EBO_Is_FMA3_NEG( TOP top )
 {
-  const TOP top = OP_code(alu_op);
   BOOL ret_val;
 
   switch (top) {
@@ -9674,9 +9747,8 @@ BOOL EBO_Is_FMA3_NEG( OP* alu_op)
   return ret_val;
 }
 
-BOOL EBO_Is_FMA4_NEG( OP* alu_op)
+BOOL EBO_Is_FMA4_NEG( TOP top )
 {
-  const TOP top = OP_code(alu_op);
   BOOL ret_val;
 
   switch (top) {
@@ -9705,7 +9777,7 @@ static BOOL EBO_Allowable_Unaligned_Vector( OP *alu_op )
   BOOL ret_val;
 
   // no alignment constraint on orochi targets for vector ops
-  if (EBO_Is_FMA3(alu_op) || OP_sse5(alu_op))
+  if (EBO_Is_FMA3(top) || OP_sse5(alu_op))
     return TRUE;
 
   switch (top) {
@@ -9882,6 +9954,131 @@ static BOOL Is_Benefitial_To_Load_Exec_Float_OP( OP *ld_op, OP *alu_op )
   return ret_val;
 }
 
+BOOL EBO_Associate_FMA( OP* op, EBO_TN_INFO** actual_tninfo )
+{
+  BOOL ret_val = FALSE;
+  TOP top = OP_code(op);
+
+  if ((EBO_in_peep == FALSE) || 
+      (CG_load_execute == 0) ||
+      (OP_flop(op) == FALSE) ||
+      EBO_Is_FMA3(top) || 
+      EBO_Is_FMA4(top))
+    return ret_val;
+
+  // After register allocation, we have opportunities
+  // to claim back some fma operations if lra did a good
+  // job. We made this easy when disassociation ran, as 
+  // we marked the candidates with the fma top code in the auxcode
+  // field.
+  if (TOP_is_load_exe(top) == FALSE) {
+    TOP aux_top = (TOP)OP_auxcode(op);
+    if (EBO_Is_FMA3(aux_top) || EBO_Is_FMA4(aux_top)) {
+      mUINT8 op_idx = OP_auxidx(op);
+      OP* mul_op = actual_tninfo[op_idx]->in_op;
+      BOOL is_fma3 = EBO_Is_FMA3(aux_top);
+      if(mul_op && OP_fmul(mul_op) &&
+         (actual_tninfo[op_idx]->reference_count == 1) &&
+         (TOP_is_load_exe(OP_code(mul_op)) == FALSE)) {
+        BB *bb = OP_bb(op);
+        TN *mul_opnd1 = OP_opnd(mul_op, 0);
+        TN *mul_opnd2 = OP_opnd(mul_op, 1);
+        TN *arith_opnd;
+        TN *result = OP_result(op, 0);
+        OP *fma_op;
+        BOOL reg_defined = FALSE;
+         
+	// Now check for defs on the mul opnds
+        for (INT i = 0; i< 2; i++) {
+          TN *mul_tn = OP_opnd(mul_op, i);
+          ISA_REGISTER_CLASS reg_cl = TN_register_class(mul_tn);
+          REGISTER reg = TN_register(mul_tn);
+          for( OP *next_op = OP_next(mul_op); next_op != NULL && next_op != op; 
+	       next_op = OP_next( next_op ) ){
+            if (OP_Defs_Reg(next_op, reg_cl, reg)) {
+              reg_defined = TRUE;
+              break;
+            }
+          }
+        }
+
+        // If we found a def on the mul opnds, we cannot proceed
+        if (reg_defined)
+          return ret_val;
+
+        // The mul result and the arith opnd are in different opnds
+        switch(op_idx) {
+        case 0: arith_opnd = OP_opnd(op, 1); break;
+        case 1: arith_opnd = OP_opnd(op, 0); break;
+        }
+
+        // Add a register transfer if mul_opnd1
+        // does not have the same register as the fma result.
+        // We need to preserve destructive dest for fma3.
+        if (is_fma3) {
+          TN *mulresult_tn = OP_result(mul_op,0);
+          REGISTER opnd0_reg = TN_register(mul_opnd1);
+          REGISTER result_reg = TN_register(result);
+          if (opnd0_reg != result_reg) {
+            BOOL swap_needed = FALSE;
+            REGISTER arith_reg = TN_register(arith_opnd);
+            REGISTER opnd1_reg = TN_register(mul_opnd2);
+	    OP *mov_op;
+            // If arith_opnd and result are the same the mul result 
+            // will be different.
+            if (arith_reg == result_reg) {
+              // If mulresult_tn and mul_opnds are the same, we cannot reunify,
+              // register allocation left us nothing to use.
+              if ((TN_register(mulresult_tn) == opnd0_reg) ||
+                  (TN_register(mulresult_tn) == opnd1_reg))
+                return ret_val;
+
+              mov_op = Mk_OP(TOP_movaps, mulresult_tn, arith_opnd);
+              Set_OP_unrolling(mov_op, OP_unrolling(op));
+              Set_OP_orig_idx(mov_op, OP_map_idx(op));
+              Set_OP_unroll_bb(mov_op, OP_unroll_bb(op));
+
+              OP_srcpos( mov_op ) = OP_srcpos( op );
+              BB_Insert_Op_Before( bb, op, mov_op );
+              arith_opnd = mulresult_tn;
+            } else if (opnd1_reg == result_reg) {
+              TN *temp = mul_opnd1;
+              mul_opnd1 = mul_opnd2;
+              mul_opnd2 = temp;
+              swap_needed = TRUE;
+            }
+
+            if (swap_needed == FALSE) {
+              mov_op = Mk_OP(TOP_movaps, result, mul_opnd1);
+              Set_OP_unrolling(mov_op, OP_unrolling(op));
+              Set_OP_orig_idx(mov_op, OP_map_idx(op));
+              Set_OP_unroll_bb(mov_op, OP_unroll_bb(op));
+
+              OP_srcpos( mov_op ) = OP_srcpos( op );
+              BB_Insert_Op_Before( bb, op, mov_op );
+              mul_opnd1 = result;
+            }
+          }
+        }
+
+        fma_op = Mk_OP(aux_top, result, mul_opnd1, mul_opnd2, arith_opnd);
+        Set_OP_unrolling(fma_op, OP_unrolling(op));
+        Set_OP_orig_idx(fma_op, OP_map_idx(op));
+        Set_OP_unroll_bb(fma_op, OP_unroll_bb(op));
+
+        OP_srcpos( fma_op ) = OP_srcpos( op );
+        BB_Insert_Op_After( bb, op, fma_op );
+        OP_Change_Aux_Opcode( op, (mUINT16)OP_auxcode(mul_op), op_idx );
+
+        // Now mark the arith op for deletion and delete the mul op
+        BB_Remove_Op(bb, mul_op);
+        ret_val = TRUE;
+      }
+    }
+  }
+  return ret_val;
+}
+
 BOOL EBO_Disassociate_FMA( OP* alu_op )
 {
   BOOL ret_val = FALSE;
@@ -9933,47 +10130,63 @@ BOOL EBO_Disassociate_FMA( OP* alu_op )
 
     // Chained single use fma instructions produce simple live ranges
     // which are better left in this form.
-    BOOL is_fma3 = EBO_Is_FMA3( alu_op );
+    BOOL is_fma3 = EBO_Is_FMA3( OP_code(alu_op) );
     if( Is_TN_Sdsu( result ) ){
       OP *use_op = Find_UseOp_For_TN( result );
-      if( use_op && ( EBO_Is_FMA4( use_op ) || EBO_Is_FMA3( use_op ) ) )
-        fma_chained = TRUE;
+      if( use_op ) {
+        TOP use_top = OP_code(use_op);
+        if( EBO_Is_FMA4( use_top ) || EBO_Is_FMA3( use_top ) )
+          fma_chained = TRUE;
+      }
     }
 
     // Now if we successfully mapped a translation, add the new code
     // for scenarios where we have at least 2(5 for fma3) live ranges greater
     // than the number of fp registers, as we will be giving potentially
     // two back from the load exec forms for the new insns.
-    INT presssure_seed = is_fma3 ? 5 : 2; 
-    if( ( local_conflicts > ( P_x + presssure_seed ) ) && 
+    INT pressure_seed = is_fma3 ? 5 : 2; 
+    if( ( local_conflicts > ( P_x + pressure_seed ) ) && 
         ( fma_chained == FALSE ) &&
         ( mul_top != TOP_UNDEFINED ) &&
         ( arith_top != TOP_UNDEFINED ) ){
-      TN *mul_result = Build_TN_Like(result);
-      OP *mul_op = Mk_OP( mul_top, mul_result, mul_opnd1, mul_opnd2 );
-      OP *arith_op;
-      if( EBO_Is_FMA4_NEG( alu_op ) || EBO_Is_FMA3_NEG( alu_op) )
-        arith_op = Mk_OP( arith_top, result, arith_opnd, mul_result );
-      else
-        arith_op = Mk_OP( arith_top, result, mul_result, arith_opnd );
+      TOP alu_top = OP_code(alu_op);
+      if ( EBO_Is_FMA4( alu_top ) &&
+           Is_Target_FMA() &&
+           ( local_conflicts <= ( P_x + 6) ) ){
+        TOP new_top = EBO_Translate_FMA_4_to_3( alu_op );
+        OP_Change_Opcode( alu_op, new_top );
+        ret_val = FALSE; // we are only changing this op, do not delete it
+      } else {
+        TN *mul_result = Build_TN_Like(result);
+        OP *mul_op = Mk_OP( mul_top, mul_result, mul_opnd1, mul_opnd2 );
+        OP *arith_op;
+        mUINT8 mul_res_idx;
+        if( EBO_Is_FMA4_NEG( alu_top ) || EBO_Is_FMA3_NEG( alu_top) ) {
+          arith_op = Mk_OP( arith_top, result, arith_opnd, mul_result );
+          mul_res_idx = 1;
+        } else {
+          arith_op = Mk_OP( arith_top, result, mul_result, arith_opnd );
+          mul_res_idx = 0;
+        }
 
-      // Add the mul component of the fma
-      Set_OP_unrolling( mul_op, OP_unrolling(alu_op) );
-      Set_OP_orig_idx( mul_op, OP_map_idx(alu_op) );
-      Set_OP_unroll_bb( mul_op, OP_unroll_bb(alu_op) );
+        // Add the mul component of the fma
+        Set_OP_unrolling( mul_op, OP_unrolling(alu_op) );
+        Set_OP_orig_idx( mul_op, OP_map_idx(alu_op) );
+        Set_OP_unroll_bb( mul_op, OP_unroll_bb(alu_op) );
 
-      OP_srcpos( mul_op ) = OP_srcpos( alu_op );
-      BB_Insert_Op_After( bb, alu_op, mul_op );
+        OP_srcpos( mul_op ) = OP_srcpos( alu_op );
+        BB_Insert_Op_After( bb, alu_op, mul_op );
 
-      // Now add the arithmetic (add, sub, addsub or subadd part)
-      Set_OP_unrolling( arith_op, OP_unrolling(alu_op) );
-      Set_OP_orig_idx( arith_op, OP_map_idx(alu_op) );
-      Set_OP_unroll_bb( arith_op, OP_unroll_bb(alu_op) );
+        // Now add the arithmetic (add, sub, addsub or subadd part)
+        Set_OP_unrolling( arith_op, OP_unrolling(alu_op) );
+        Set_OP_orig_idx( arith_op, OP_map_idx(alu_op) );
+        Set_OP_unroll_bb( arith_op, OP_unroll_bb(alu_op) );
+        OP_Change_Aux_Opcode( arith_op, (mUINT16)OP_code(alu_op), mul_res_idx );
 
-      OP_srcpos( arith_op ) = OP_srcpos( alu_op );
-      BB_Insert_Op_After( bb, mul_op, arith_op );
-
-      ret_val = TRUE;
+        OP_srcpos( arith_op ) = OP_srcpos( alu_op );
+        BB_Insert_Op_After( bb, mul_op, arith_op );
+        ret_val = TRUE;
+      }
     }
 
     TN_MAP_Delete(conflict_map);
@@ -10025,7 +10238,7 @@ BOOL EBO_Load_Execution( OP* alu_op,
       opnd0_indx = OP_opnds(alu_op) - 1 - i;
       Is_True( opnd0_indx >= 0, ("NYI") );
     }
-  } else if ( EBO_Is_FMA4(alu_op) ) {
+  } else if( EBO_Is_FMA4( OP_code(alu_op) ) ){
     int i;
     OP *mul_in_op = actual_tninfo[1]->in_op;
     OP *add_sub_in_op2 = actual_tninfo[2]->in_op;
@@ -10067,7 +10280,7 @@ BOOL EBO_Load_Execution( OP* alu_op,
     }
   } else {
     // FMA3 operand selection follows general rules
-    if ( EBO_Is_FMA3(alu_op) ){
+    if ( EBO_Is_FMA3(OP_code(alu_op)) ){
       if (CG_fma3_load_exec == FALSE)
         return FALSE;
     }
@@ -10286,7 +10499,8 @@ BOOL EBO_Load_Execution( OP* alu_op,
 
   OP* new_op = NULL;
 
-  if ((OP_sse5(alu_op) && EBO_Is_FMA4(alu_op)) || EBO_Is_FMA3(alu_op)) {
+  TOP alu_top = OP_code(alu_op);
+  if ((OP_sse5(alu_op) && EBO_Is_FMA4(alu_top)) || EBO_Is_FMA3(alu_top)) {
     // succeed or fail based on layout match
     rval = EBO_Process_SSE5_Load_Execute(new_top, mode, alu_cmp_idx, base,
                                            scale, index, offset,
