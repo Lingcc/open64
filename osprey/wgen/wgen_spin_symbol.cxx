@@ -1607,7 +1607,7 @@ Create_ST_For_Tree (gs_t decl_node)
   else if (gs_decl_name (decl_node))
     name = (char *) gs_identifier_pointer (gs_decl_name (decl_node));
   else {
-    sprintf(tempname, "anon%d", ++anon_count);
+    sprintf(tempname, TVAR_PREFIX "%d", ++anon_count);
     name = tempname;
   }
 
