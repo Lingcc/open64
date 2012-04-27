@@ -1511,6 +1511,14 @@ COPYPROP::Copy_propagate_cr(CODEREP *x, BB_NODE *curbb,
               CODEREP *possible_prop = Copy_propagate_cr(x->Opnd(i), curbb, inside_cse, in_array);
               if (possible_prop && possible_prop->Kind() == x->Opnd(i)->Kind()) 
                 expr = possible_prop;
+              // open64.net bug963. If the Asm_input constraint is "i", i.e, required immediate
+              // and the possible propagation is also a constant, we do this propagation on demand.
+              else if (possible_prop &&
+                       (possible_prop->Kind() == CK_CONST ||
+                        possible_prop->Kind() == CK_RCONST) &&
+                       !strncmp(ST_name(&St_Table[x->Asm_constraint()]),"i",1)) {
+                expr = possible_prop;
+              }
               else {
                 x->Opnd(i)->Set_flag(CF_DONT_PROP);
                 expr = NULL;
