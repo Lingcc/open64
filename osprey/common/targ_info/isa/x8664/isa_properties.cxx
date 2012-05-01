@@ -11489,7 +11489,6 @@ int main()
 		     TOP_pavgw128,
 		     TOP_psadbw128,
 		     TOP_pand,
-		     TOP_pandn,
 		     TOP_por,
 		     TOP_pxor,
                      TOP_vfaddsd,
