@@ -720,7 +720,8 @@ DST_mk_cross_inlined_subroutine(
                  UINT64        ,        
                  USRCPOS       ,        
                  char          *,      
-                 char          *);     
+                 char          *,
+                 DST_INFO_IDX );     
 #endif
 
 #if defined(_SUPPORT_IPA) || defined(_STANDALONE_INLINER) || defined(_LEGO_CLONER)

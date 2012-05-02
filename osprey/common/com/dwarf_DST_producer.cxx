@@ -694,7 +694,8 @@ DST_mk_cross_inlined_subroutine(
 			  UINT64	fmod_time,	    /* Last file mod time */
    			  USRCPOS      	inl_decl,  	    /* inline routine's source position */
 			  char		*filename,	    /* ptr to filename of the inlined routine */
-			  char 		*dirname)	    /* ptr to directory path of the inlined routine */
+			  char 		*dirname,	    /* ptr to directory path of the inlined routine */
+			  DST_INFO_IDX  abstract_origin)    /* The abstract version of this subroutine */
 		
 {
    DST_INFO_IDX            info_idx;
@@ -702,7 +703,6 @@ DST_mk_cross_inlined_subroutine(
    DST_flag                flag = DST_no_flag;
    DST_INLINED_SUBROUTINE *attr;
    USRCPOS      	   decl;  	/* source position */
-   DST_INFO_IDX  	   abstract_origin = DST_FOREIGN_INIT;
    mUINT16 file_id = 0;
    
    USRCPOS_clear(decl);

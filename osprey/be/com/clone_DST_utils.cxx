@@ -817,7 +817,8 @@ DST_enter_inlined_subroutine(DST_IDX parent,
 						      fmod_time,
 						      DST_SUBPROGRAM_decl_decl(attr),
 						      filename,
-						      dirname);
+						      dirname, 
+						      abstract_origin);
 
             DST_append_child(parent, idx);
 
