@@ -1525,16 +1525,6 @@ int main()
 			   TOP_UNDEFINED );
 
   /* dest=op(src1, src2), non-x86-style */
-  ISA_PRINT_TYPE vropspec = ISA_Print_Type_Create("vropspec", "%s %s,%s,%s");
-  Name();
-  Operand(0);
-  Result(0);
-  Result(0);
-  Instruction_Print_Group( vropspec,
-                           TOP_vmovlhps,
-			   TOP_UNDEFINED );
-
-  /* dest=op(src1, src2), non-x86-style */
   ISA_PRINT_TYPE vropop = ISA_Print_Type_Create("vropop", "%s %s,%s,%s");
   Name();
   Operand(1);
@@ -1640,6 +1630,7 @@ int main()
                            TOP_vpmaddwd,
                            TOP_vpmaddubsw128,
                            TOP_vmovhlps,
+                           TOP_vmovlhps,
                            TOP_vmovsd,
                            TOP_vmovss,
                            TOP_vmaxs128v8,

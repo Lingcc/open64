@@ -5984,7 +5984,11 @@ static void Expand_Complex_Divide( OPCODE opcode, TN *result,
     Build_OP(TOP_shufpd, tmp26, tmp25, tmp25, Gen_Literal_TN(1, 1), ops);
     Build_OP(TOP_fdiv128v64, tmp27, tmp26, tmp24, ops);
     Build_OP(TOP_cvtpd2ps, tmp28, tmp27, ops);
-    Build_OP(TOP_movlhps, result, tmp28, ops);
+    if (Is_Target_Orochi() && Is_Target_AVX()) {
+      Build_OP(TOP_movlhps, result, result, tmp28, ops);
+    } else {
+      Build_OP(TOP_movlhps, result, tmp28, ops);
+    }
   }
 
   Set_OP_cond_def_kind( OPS_last(ops), OP_ALWAYS_COND_DEF );
@@ -6726,10 +6730,11 @@ Expand_Shuffle (OPCODE opc, TN* result, TN* op1, VARIANT variant, OPS *ops)
   case OPC_V16F8V16F8SHUFFLE:
     if (Is_Target_Orochi() && Is_Target_AVX()) {
       Build_OP(TOP_movhlps, result, op1, op1, ops);
+      Build_OP(TOP_movlhps, result, result, op1, ops);
     } else {
       Build_OP(TOP_movhlps, result, op1, ops);
+      Build_OP(TOP_movlhps, result, op1, ops);
     }
-    Build_OP(TOP_movlhps, result, op1, ops);
     Set_OP_cond_def_kind( OPS_last(ops), OP_ALWAYS_COND_DEF );
     break;    
   case OPC_V16I2V16I2SHUFFLE:
@@ -6738,10 +6743,11 @@ Expand_Shuffle (OPCODE opc, TN* result, TN* op1, VARIANT variant, OPS *ops)
       TN* tmp2 = Build_TN_Like(result);
       if (Is_Target_Orochi() && Is_Target_AVX()) {
         Build_OP(TOP_movhlps, tmp1, op1, op1, ops);
+        Build_OP(TOP_movlhps, tmp1, tmp1, op1, ops);
       } else {
         Build_OP(TOP_movhlps, tmp1, op1, ops);
+        Build_OP(TOP_movlhps, tmp1, op1, ops);
       }
-      Build_OP(TOP_movlhps, tmp1, op1, ops);
       Set_OP_cond_def_kind( OPS_last(ops), OP_ALWAYS_COND_DEF );
       Build_OP(TOP_pshuflw, tmp2, tmp1, Gen_Literal_TN(0x1B, 1), ops);
       Build_OP(TOP_pshufhw, result, tmp2, Gen_Literal_TN(0x1B, 1), ops);
@@ -8071,10 +8077,24 @@ Exp_Intrinsic_Op (INTRINSIC id, TN *result, TN *op0, TN *op1, TN *op2, TN *op3, 
     Build_OP( TOP_movsd, result, op0, op1, ops );
     break;
   case INTRN_MOVHLPS:
-    Build_OP( TOP_movhlps, result, op0, op1, ops );
+     if (Is_Target_Orochi() && Is_Target_AVX()) {
+      Build_OP( TOP_movhlps, result, op0, op1, ops );
+    } else {
+      // do packing of  op1[2] op1[3] op0[2] op0[3] in result
+      Build_OP(TOP_shufps, result, op0, op1, Gen_Literal_TN(187, 1), ops);  
+      // reverse fields to get op0[3] op0[2] op1[3] op1[2]
+      Build_OP(TOP_shufps, result, result, result, Gen_Literal_TN(27, 1), ops);
+    }
+
     break;
   case INTRN_MOVLHPS:
-    Build_OP( TOP_movlhps, result, op0, op1, ops );
+    if (Is_Target_Orochi() && Is_Target_AVX()) {
+      Build_OP( TOP_movlhps, result, op0, op1, ops );
+    } else {
+      // do packing of  op1[1] op1[0] op0[1] op0[0] in result
+      Build_OP(TOP_shufps, result, op0, op1, Gen_Literal_TN(68, 1), ops);
+    }
+
     break;
   case INTRN_UNPCKHPS:
     Build_OP( TOP_unpckhps, result, op0, op1, ops );

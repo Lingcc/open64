@@ -1194,6 +1194,7 @@ int main()
                      TOP_vfminsd,
                      TOP_vfminss,
                      TOP_vmovhlps,
+                     TOP_vmovlhps,
                      TOP_vfmul128v64,
                      TOP_vfmul128v32,
                      TOP_vmulsd,
@@ -4570,7 +4571,6 @@ int main()
   Operand(3, uimm8, opnd2);
 
   Instruction_Group("move-high-low",
-                    TOP_vmovlhps,
 		    TOP_movlhps,
 		    TOP_movhlps,
 		    TOP_UNDEFINED);
