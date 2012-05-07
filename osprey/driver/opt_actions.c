@@ -1167,7 +1167,7 @@ run_from_build (char *builddir)
 
 	builddir_len = strlen(builddir);
 	strcpy(new_path, builddir);
-	strcat(new_path, "/osprey-gcc-4.2.0/gcc");
+	strcat(new_path, "/osprey-gcc-4.2.0/host-unknown/gcc");
 	strcat(new_ld_path, ":");
 	strcat(new_ld_path, new_path);
 	override_phase(P_gcpp, "P_gcpp", new_path, "xgcc");

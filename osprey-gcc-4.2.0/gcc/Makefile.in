@@ -845,10 +845,8 @@ endif
 # win against random include files in /usr/include.
 ALL_CPPFLAGS = $(INCLUDES) $(CPPFLAGS) $(X_CPPFLAGS) $(T_CPPFLAGS)
 
-#LIBGSPIN = ../../../libspin/libgspin42.a
-#This is a symbol link, create by the CONFIGURE script
-#LIBGSPIN = ../../../libspin/libgspin42.a
-LIBGSPIN = ../../osprey/targdir/libspin_4_2_0/libgspin42.a
+# Open64: Location of libgspin42.a, which must already be built.
+LIBGSPIN = $(build_objdir)/../../osprey/targdir/libspin_4_2_0/libgspin42.a
 
 # Build and host support libraries.
 LIBIBERTY = ../libiberty/libiberty.a
@@ -4836,7 +4834,3 @@ po/gcc.pot: force
 	AWK=$(AWK) $(SHELL) $(srcdir)/po/exgettext \
 		$(XGETTEXT) gcc $(srcdir)
 
-# KEY: rule for making libgspin.a
-# Do not build libspin.a here, it's created by targXXXX_XXXX/CONFIGURE
-#$(LIBGSPIN):
-#	make -C ../../../libspin FE=GNU_4_2_0
