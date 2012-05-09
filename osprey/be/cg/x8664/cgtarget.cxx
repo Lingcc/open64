@@ -3621,11 +3621,15 @@ CGTARG_TN_For_Asm_Operand (const char* constraint,
         load = NULL;
       }
     }
+
+    // bug916 open64.net, &var.field is allowed as "i"
+    // bug962 open64.net, function symbol is allowed as "i"
     if (!(load && (WN_operator(load) == OPR_INTCONST ||
                        (WN_operator(load) == OPR_LDA &&
-                        // &var.field is also allowed, bug916 open64.net
                         (ST_sym_class(WN_st(load)) == CLASS_VAR || 
-                         ST_sym_class(WN_st(load)) == CLASS_CONST))))) {
+                         ST_sym_class(WN_st(load)) == CLASS_CONST ||
+                         ST_sym_class(WN_st(load)) == CLASS_FUNC
+                         ))))) {
       ErrMsgSrcpos(EC_Invalid_Asm_Constrain, WN_Get_Linenum(asm_wn),
                     ": Cannot find immediate operand for ASM");
     }
