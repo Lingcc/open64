@@ -1383,6 +1383,8 @@ UINT32 SC_NODE::Encode_path(SC_NODE * sc)
     sc_iter1 = sc_iter1->Parent();
     sc_iter2 = sc_iter2->Parent();
   }
+
+  return 0;
 }
 
 // Count number of loops on the path from this SC_NODE to given sc_root.
@@ -1517,6 +1519,8 @@ SC_NODE::Is_empty()
 BOOL
 SC_NODE::Is_same(SC_NODE * sc)
 {
+  FmtAssert((sc != this), ("Expect different SC_NODE."));
+
   if ((type != sc->Type())
       || (kids->Len() != sc->Kids()->Len()))
     return FALSE;
@@ -1656,12 +1660,12 @@ SC_NODE::Get_bounds(WN ** p_start, WN ** p_end, WN ** p_step)
   return TRUE;
 }
 
-// Create and return a temporary MTYPE_I4 array of 'size'
+// Create and return a temporary 'mtype' array of 'size'
 ST *
-CFG_TRANS::Tmp_array_st(int size)
+CFG_TRANS::Tmp_array_st(MTYPE mtype, int size)
 {
   TY_IDX arr_ty_idx;
-  TY_IDX ele_ty_idx = MTYPE_To_TY(MTYPE_I4);
+  TY_IDX ele_ty_idx = MTYPE_To_TY(mtype);
   TY & ty = New_TY(arr_ty_idx);
   TY_Init (ty, size * TY_size(ele_ty_idx), KIND_ARRAY, MTYPE_UNKNOWN, Save_Str("_local_temp_array"));
   
@@ -1695,6 +1699,10 @@ WN *
 CFG_TRANS::Create_array_load(ST * st, WN * wn_index)
 {
   TY_IDX ty_idx = ST_type(*st);
+  FmtAssert((TY_kind(ty_idx) == KIND_ARRAY), ("Expect an array."));
+  ARB_HANDLE arb = TY_arb(ty_idx);
+  FmtAssert((ARB_dimension(arb) == 1),  ("Expect 1 dimension."));
+
   TY_IDX element_ty_idx = TY_etype(ty_idx);
   TYPE_ID element_type_id = TY_mtype(element_ty_idx);
   UINT64 element_size = TY_size(element_ty_idx);
@@ -1747,6 +1755,7 @@ CFG_TRANS::Create_array_store(ST * st, WN * wn_index, WN * wn_val)
   TY_IDX ty_idx = ST_type(*st);
   TY_IDX element_ty_idx = TY_etype(ty_idx);
   TYPE_ID element_type_id = TY_mtype(element_ty_idx);
+  FmtAssert((element_type_id == WN_rtype(wn_val)), ("Type of store value does not match"));
   UINT64 element_size = TY_size(element_ty_idx);
   UINT64 element_count = TY_size(ty_idx) / element_size;
   TY_IDX ty_ptr = Make_Pointer_Type(element_ty_idx);
@@ -5215,7 +5224,6 @@ CFG_TRANS::Do_code_motion(SC_NODE * sc1, SC_NODE * sc2)
   cfg->Invalidate_and_update_aux_info(FALSE);
   cfg->Invalidate_loops();
   Inc_transform_count();
-   Inc_transform_count();
 }
 
 // Insert a single-entry-single-exit region defined by (src_entry, src_exit) between
@@ -6711,7 +6719,6 @@ BOOL
 PRO_LOOP_INTERCHANGE_TRANS::Process_non_identical_nodes
 (STACK<SC_NODE *> * fusion_stack, SC_NODE * outer_loop, UINT32 path_code)
 {
-  BOOL is_candidate = TRUE;
   for (int i = 0; i < fusion_stack->Elements(); i++) {
     SC_NODE * sc_cur = fusion_stack->Top_nth(i);
     SC_NODE * inner_loop = sc_cur;
@@ -6724,25 +6731,22 @@ PRO_LOOP_INTERCHANGE_TRANS::Process_non_identical_nodes
       SC_NODE * sc_iter = inner_loop->Next_sibling();
       while (sc_iter) {
 	if (Has_dependency(sc_iter, inner_loop)) {
-	  is_candidate = FALSE;
-	  break;
+	  return FALSE;
 	}
 	sc_iter = sc_iter->Next_sibling();
       }
 
-      if (is_candidate) {
-	if (!Is_invariant(inner_loop, sc_if->Get_cond(), 0)
-	    || !Do_sink_node(sc_if, inner_loop, TRUE)) {
-	  is_candidate = FALSE;
-	  break;
-	}
-	else {
-	  if (_trace) {
-	    printf("\n\t\t Func: %s(%d) sink loop (SC%d) out of if-condition (SC:%d)\n", 
-		   Current_PU_Name(), Current_PU_Count(), inner_loop->Id(), sc_if->Id());
-	  }
+      if (!Is_invariant(inner_loop, sc_if->Get_cond(), 0)
+	  || !Do_sink_node(sc_if, inner_loop, TRUE)) {
+	return FALSE;
+      }
+      else {
+	if (_trace) {
+	  printf("\n\t\t Func: %s(%d) sink loop (SC%d) out of if-condition (SC:%d)\n", 
+		 Current_PU_Name(), Current_PU_Count(), inner_loop->Id(), sc_if->Id());
 	}
       }
+
       continue;
     }
       
@@ -6759,24 +6763,20 @@ PRO_LOOP_INTERCHANGE_TRANS::Process_non_identical_nodes
 	    sc_cur = inner_loop->Get_nesting_if(level);
 	    if (!Do_canon(sc_cur, inner_loop, SPLIT_IF_HEAD | HEAD_DUP | TAIL_DUP | CHK_LEGAL)
 		|| !Do_if_cond_dist(sc_cur, TRUE)) {
-	      is_candidate = FALSE;
-	      break;
+	      return FALSE;
 	    }
 	    level--;
 	  }
 	}
 	else
-	  is_candidate = FALSE;
+	  return FALSE;
 	break;
       }
-	cur_code >>= 1;
-	level++;
-      }
-
-      if (!is_candidate)
-	break;
+      cur_code >>= 1;
+      level++;
+    }
   }
-  return is_candidate;
+  return TRUE;
 }
 
 // Process identical if-conditions between the outer loop and the inner loop.
@@ -6819,10 +6819,7 @@ PRO_LOOP_INTERCHANGE_TRANS::Process_identical_nodes(SC_NODE * outer_loop, SC_NOD
       
       if (is_invar || is_partial_invar) {
 	// Do if-condition tree-height reduction and/or loop unswitching.
-	if (sc_tmp && !Do_if_cond_tree_height_reduction(outer_if, sc_if->Parent())) {
-	  ;
-	}
-	else {
+	if (!sc_tmp || Do_if_cond_tree_height_reduction(outer_if, sc_if->Parent())) {
 	  sc_if = inner_loop->Get_nesting_if(outer_loop);
 	  if (Do_loop_unswitching(sc_if, outer_loop, !is_invar))
 	    return TRUE;
@@ -7154,11 +7151,21 @@ PRO_LOOP_INTERCHANGE_TRANS::Do_push_nodes
 // Swap 'sc_if' with if-conditions are nested insider it.  The transformation is limited to 
 // perfectly-nested SC_IFs with either an empty then-path or an empty else-path, e.g.,
 //
-// if (...) {
-//    if (...) {
-//      if (...) {
+// From:
+// if (a) {
+//    if (b) {
+//      if (c) {
 //       ...
 //      }
+//    }
+// }
+//
+// To:
+// if (b) {
+//    if (c) {
+//      if (a) {
+//        ...
+//       }
 //    }
 // }
 //
@@ -7212,6 +7219,8 @@ PRO_LOOP_INTERCHANGE_TRANS::Do_swap_if(SC_NODE * sc_if)
 
 // Do loop unswitching for nested if-regions whose conditional expressions are loop invariants
 // in a top down order, e.g., the outermost if-condition is hoisted first.
+// 
+// From:
 // for (..) {
 //   if (invar1) {        
 //       if (invar2) {
@@ -7219,6 +7228,14 @@ PRO_LOOP_INTERCHANGE_TRANS::Do_swap_if(SC_NODE * sc_if)
 //       }
 //   }
 // }
+// 
+// To:
+//  if (invar1) {
+//      if (invar2) {
+//         for (...)
+//      }
+//  }
+//
 void
 PRO_LOOP_INTERCHANGE_TRANS::Top_down_do_loop_unswitch(SC_NODE * sc_loop)
 {
@@ -7620,7 +7637,7 @@ PRO_LOOP_INTERCHANGE_TRANS::Top_down_do_precomp(SC_NODE * outer_loop, SC_NODE * 
 	  
 	  // Create a temporay array.
 	  int trip_cnt = upper_bound - lower_bound + 1;
-	  ST * array_st = Tmp_array_st(trip_cnt);
+	  ST * array_st = Tmp_array_st(MTYPE_I4, trip_cnt);
 
 	  for (int i = 0; i < size; i++) {
 	    SC_NODE * sc_if = stk_precomp->Bottom_nth(i);
@@ -10218,12 +10235,14 @@ CFG_TRANS::Invalidate_invar(SC_NODE * sc)
 //     }
 //   }
 //   else {
-//     if (a) {
-//       block 1;
-//     }
-//     else {
-//       a = ...;
-//       block 2;
+//     for (...) {
+//       if (a) {
+//         block 1;
+//       }
+//       else {
+//         a = ...;
+//         block 2;
+//       }
 //     }
 //   }
 //  
@@ -15293,6 +15312,7 @@ WN *
 CFG_TRANS::Get_wn_by_aux_id(AUX_ID aux_id, WN * wn)
 {
   OPERATOR opr = WN_operator(wn);
+  FmtAssert(opr != OPR_BLOCK, ("Illegal input WHILR"));
 
   if (OPERATOR_is_scalar_load(opr)
       && (WN_aux(wn) == aux_id))

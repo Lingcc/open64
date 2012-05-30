@@ -1857,7 +1857,7 @@ WN_get_val(WN * wn, MAP* map)
 }
 
 // Add all integer constant elements in 'stk'.
-static INT64 Add_const_wn_stack(STACK<WN *> * stk)
+static INT64 Add_const_in_stack(STACK<WN *> * stk)
 {
   INT64 sum = 0;
   for (int i = 0; i < stk->Elements(); i++) {
@@ -1870,7 +1870,7 @@ static INT64 Add_const_wn_stack(STACK<WN *> * stk)
 
 // Collect addition and substraction operands in 'wn',
 // save addition operands in 'stack1', save substraction operands in 'stack2'.
-static void Add_wn_stack(WN * wn, STACK<WN *> * stack1, STACK<WN *> * stack2, MEM_POOL * pool)
+static void Collect_wn_stack(WN * wn, STACK<WN *> * stack1, STACK<WN *> * stack2, MEM_POOL * pool)
 {
   STACK<WN *> * add_stk = CXX_NEW(STACK<WN *> (pool), pool);
   STACK<WN *> * sub_stk = CXX_NEW(STACK<WN *> (pool), pool);
@@ -1894,26 +1894,26 @@ static void Add_wn_stack(WN * wn, STACK<WN *> * stack1, STACK<WN *> * stack2, ME
   CXX_DELETE(sub_stk, pool);
 }
 
-// Find elements in 'stack1' that matches 'wn_iter2' and remove such elements 
-// from 'stack1'.  Return TRUE if found.  Expression "x" is considered to match
+// Find elements in 'stack' that matches 'wn_match' and remove such elements 
+// from 'stack'.  Return TRUE if found.  Expression "x" is considered to match
 // expression "c * x", where c is an integer constant. In this case, also return 
 // the diff "(c - 1) * x".
 static std::pair<WN *, BOOL>
-Get_diff(WN * wn2_iter, STACK<WN *> * stack1, MEM_POOL * pool)
+Get_diff(WN * wn_match, STACK<WN *> * stack, MEM_POOL * pool)
 {
   WN * wn_mul = NULL;
   WN * wn_diff = NULL;
 
-  if ((WN_operator(wn2_iter) == OPR_MPY)
-      && (WN_operator(WN_kid1(wn2_iter)) == OPR_INTCONST))
-    wn_mul = WN_kid0(wn2_iter);
+  if ((WN_operator(wn_match) == OPR_MPY)
+      && (WN_operator(WN_kid1(wn_match)) == OPR_INTCONST))
+    wn_mul = WN_kid0(wn_match);
 
   BOOL found = FALSE;
-  STACK<WN *> * stack_tmp1 = CXX_NEW(STACK<WN *>(pool), pool);
-  for (int j = 0; j < stack1->Elements(); j++) {
-    WN * wn1_iter = stack1->Top_nth(j);
-    if (WN_Simp_Compare_Trees(wn1_iter, wn2_iter) == 0) {
-      stack1->DeleteTop(j);
+  STACK<WN *> * stack_tmp = CXX_NEW(STACK<WN *>(pool), pool);
+  for (int j = 0; j < stack->Elements(); j++) {
+    WN * wn1_iter = stack->Top_nth(j);
+    if (WN_Simp_Compare_Trees(wn1_iter, wn_match) == 0) {
+      stack->DeleteTop(j);
       found = TRUE;
       break;
     }
@@ -1922,26 +1922,26 @@ Get_diff(WN * wn2_iter, STACK<WN *> * stack1, MEM_POOL * pool)
       // expressions like 'x+x' is equal to '2*x'.
       int cnt = 0;
       WN * wn_tmp;
-      while (!stack_tmp1->Is_Empty())
-	stack_tmp1->Pop();
+      while (!stack_tmp->Is_Empty())
+	stack_tmp->Pop();
 
-      for (int k = 0; k < stack1->Elements(); k++) {
-	wn_tmp = stack1->Top_nth(k);
+      for (int k = 0; k < stack->Elements(); k++) {
+	wn_tmp = stack->Top_nth(k);
 	if (WN_Simp_Compare_Trees(wn_mul, wn_tmp) == 0)
 	  cnt++;
 	else 
-	  stack_tmp1->Push(wn_tmp);
+	  stack_tmp->Push(wn_tmp);
       }
       
-      INT64 val = WN_const_val(WN_kid1(wn2_iter));
+      INT64 val = WN_const_val(WN_kid1(wn_match));
       if (cnt == val) {
-	// Remove matched elements from 'stack1'.
-	while (!stack1->Is_Empty())
-	  stack1->Pop();
+	// Remove matched elements from 'stack'.
+	while (!stack->Is_Empty())
+	  stack->Pop();
 	      
-	while (!stack_tmp1->Is_Empty()) {
-	  wn_tmp = stack_tmp1->Pop();
-	  stack1->Push(wn_tmp);
+	while (!stack_tmp->Is_Empty()) {
+	  wn_tmp = stack_tmp->Pop();
+	  stack->Push(wn_tmp);
 	}
 	found = TRUE;
 	break;
@@ -1953,7 +1953,7 @@ Get_diff(WN * wn2_iter, STACK<WN *> * stack1, MEM_POOL * pool)
       }
     }
   }
-  CXX_DELETE(stack_tmp1, pool);
+  CXX_DELETE(stack_tmp, pool);
   return std::pair<WN *, bool>(wn_diff, found);
 }
 
@@ -2041,8 +2041,8 @@ WN_has_disjoint_val_range(WN * wn1, WN * wn2, MAP * lo_map, MAP* hi_map, MAP * d
     STACK<WN *> * stack1 = CXX_NEW(STACK<WN *> (pool), pool);
     STACK<WN *> * stack2 = CXX_NEW(STACK<WN *> (pool), pool);
 
-    Add_wn_stack(wn1, stack1, stack2, pool);
-    Add_wn_stack(wn2, stack2, stack1, pool);
+    Collect_wn_stack(wn1, stack1, stack2, pool);
+    Collect_wn_stack(wn2, stack2, stack1, pool);
     STACK<WN *> * stack_tmp1 = NULL;
     STACK<WN *> * stack_tmp2 = NULL;
     BOOL do_swap = FALSE;
@@ -2077,7 +2077,7 @@ WN_has_disjoint_val_range(WN * wn1, WN * wn2, MAP * lo_map, MAP* hi_map, MAP * d
       WN * wn_deriv = WN_get_deriv(wn_iter, deriv_map);
       if (wn_deriv && (WN_operator(wn_deriv) == OPR_LT)) {
 	wn_deriv = WN_kid1(wn_deriv);
-	Add_wn_stack(wn_deriv, stack_tmp1, stack_tmp2, pool);
+	Collect_wn_stack(wn_deriv, stack_tmp1, stack_tmp2, pool);
       }
       else 
 	stack_tmp1->Push(wn_iter);
@@ -2094,10 +2094,10 @@ WN_has_disjoint_val_range(WN * wn1, WN * wn2, MAP * lo_map, MAP* hi_map, MAP * d
 
     int delta = 0;
     if (stack_tmp1) 
-      delta -= Add_const_wn_stack(stack_tmp1);
+      delta -= Add_const_in_stack(stack_tmp1);
 
     if (stack_tmp2) 
-      delta += Add_const_wn_stack(stack_tmp2);
+      delta += Add_const_in_stack(stack_tmp2);
 
     // Evalute diff of stack_tmp1 and stack_tmp2 using deriv_map.
     BOOL is_disjoint = TRUE;
@@ -2141,8 +2141,8 @@ WN_has_disjoint_val_range(WN * wn1, WN * wn2, MAP * lo_map, MAP* hi_map, MAP * d
     }
 
     // Evaluate diff of stack1 and stack2 using lo_map and hi_map.
-    delta = Add_const_wn_stack(stack1);
-    delta -= Add_const_wn_stack(stack2);
+    delta = Add_const_in_stack(stack1);
+    delta -= Add_const_in_stack(stack2);
     int delta_lo = delta;
     int delta_hi = delta;
     std::pair<bool, int> p_val;
@@ -2217,6 +2217,8 @@ BOOL
 WN_has_indir_load(WN * wn)
 {
   OPERATOR opr = WN_operator(wn);
+  FmtAssert(opr != OPR_BLOCK, ("Illegal input WHILR"));
+  
   if (OPERATOR_is_load(opr) && !OPERATOR_is_scalar_load(opr))
     return TRUE;
 

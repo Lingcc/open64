@@ -532,7 +532,7 @@ protected:
   void Set_hi(MAP *, WN *, int);
   std::pair<bool,int> Clone_val(WN *, WN *, MAP *);
   WN * Get_wn_by_aux_id(AUX_ID, WN *);
-  ST * Tmp_array_st(int);
+  ST * Tmp_array_st(MTYPE mtype, int);
   WN * Create_array_store(ST *, WN *, WN *);
   WN * Create_array_load(ST *, WN *);
 
