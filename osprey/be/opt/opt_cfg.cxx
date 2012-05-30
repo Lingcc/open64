@@ -100,7 +100,7 @@ static char *rcs_id = 	opt_cfg_CXX"$Revision: 1.30 $";
 #include "opt_tail.h"
 #include "w2op.h"
 #include "wn_tree_util.h"
-
+#include "cxx_hash.h"
 CFG::CFG(MEM_POOL *pool, MEM_POOL *lpool)
      : _bb_vec(pool),
        _entry_vec(pool),
@@ -6536,7 +6536,9 @@ CFG::Insert_block_after(SC_NODE * sc)
 SC_NODE *
 CFG::Insert_block_before(SC_NODE * sc)
 {
-  FmtAssert((sc->Type() == SC_IF) || (sc->Type() == SC_BLOCK), ("Expect a SC_IF or a SC_BLOCK"));
+  FmtAssert((sc->Type() == SC_IF) || (sc->Type() == SC_BLOCK)
+	    || ((sc->Type() == SC_LOOP) && sc->Loopinfo()->Is_flag_set(LOOP_PRE_DO)),
+	    ("Unexpected SC type"));
   SC_NODE  * sc_prev = sc->Prev_sibling();
   BB_NODE * bb_new = Create_and_allocate_bb(BB_GOTO);
   SC_NODE * sc_new = Create_sc(SC_BLOCK);
@@ -6553,6 +6555,13 @@ CFG::Insert_block_before(SC_NODE * sc)
     Feedback()->Add_node(bb_new->Id());
   
   FOR_ALL_ELEM(bb_tmp, bb_list_iter, Init(bb_head->Pred())) {
+    if (bb_tmp->Is_branch_to(bb_head)) {
+      WN * branch_wn = bb_tmp->Branch_wn();
+      if (bb_new->Labnam() == 0)
+	Add_label_with_wn(bb_new);
+      WN_label_number(branch_wn) = bb_new->Labnam();
+    }
+
     bb_tmp->Replace_succ(bb_head, bb_new);
     if (Feedback()) {
       Feedback()->Move_edge_dest(bb_tmp->Id(), bb_head->Id(), bb_new->Id());
@@ -6574,8 +6583,8 @@ CFG::Insert_block_before(SC_NODE * sc)
   bb_prev->Set_next(bb_new);
 
   sc->Insert_before(sc_new);
-
-  Fix_info(sc_prev);
+  if (sc_prev)
+    Fix_info(sc_prev);
   Fix_info(sc->Parent());
   Invalidate_and_update_aux_info(FALSE);
   Invalidate_loops();
@@ -6861,7 +6870,6 @@ void CFG::Clone_bbs
   *new_last = NULL;
   BB_NODE * bb_cur;
   MEM_POOL * pool = _loc_pool;
-
   if (_clone_map)
     CXX_DELETE(_clone_map, pool);
 
@@ -7040,8 +7048,9 @@ CFG::Clone_loop(BB_LOOP * bb_loop)
   if (bb_loop->Promoted_do())
     new_loopinfo->Set_promoted_do();
 
-  if (bb_loop->Orig_wn())
-    new_loopinfo->Set_orig_wn(bb_loop->Orig_wn());
+  // Nullify Orig_wn to avoid copying of stale feedback info at downstream phases.
+  // Feedback info should have been updated when the loop is copied.
+  new_loopinfo->Set_orig_wn(NULL);
   
   new_loopinfo->Set_preheader (new_preheader);
 
@@ -7175,9 +7184,13 @@ CFG::Freq_scale(SC_NODE * sc, float scale)
   SC_TYPE sc_type = sc->Type();
   SC_NODE * sc_tmp = NULL;
     
-  if (sc_type == SC_LP_COND) 
+  if (sc_type == SC_LP_COND) {
     sc_tmp = sc->Parent()->Find_kid_of_type(SC_LP_BODY);
-
+    sc = sc->Find_kid_of_type(SC_BLOCK);
+    if (!sc)
+      return;
+  }
+  
   BB_NODE * bb = sc->Get_bb_rep();
   if (bb != NULL)
     Freq_scale(bb, sc_tmp, scale);
@@ -7206,3 +7219,4 @@ CFG::Freq_scale(SC_NODE * sc, float scale)
     }
   }
 }
+  

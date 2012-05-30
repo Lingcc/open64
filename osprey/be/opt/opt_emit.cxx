@@ -844,7 +844,11 @@ Raise_doloop_stmt(EMITTER *emitter, BB_NODE **bb)
 		    step,
 		    block_body, 
 		    loop_info_wn);
-  WN_COPY_All_Maps(rwn, bb_end->Loop()->Orig_wn());
+  WN * orig_wn = bb_end->Loop()->Orig_wn();
+  if (orig_wn)
+    WN_COPY_All_Maps(rwn, orig_wn);
+  else
+    bb_end->Loop()->Set_orig_wn(rwn);
 
   WN_Set_Linenum(rwn, bb_start->Linenum());
   if (emitter->Cfg()->Feedback()) {  // NOTE: Use Orig_wn()?
