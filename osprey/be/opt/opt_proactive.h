@@ -379,14 +379,14 @@ public:
 class CFG_TRANS {
 private:
   BS * _true_val;   // a bit set of TRUE values, scratch field.
-  MAP * _val_map;   // map from an interger to a value number.
-  MAP * _low_map;  // map from WN * to a constant that gives value's low boundary.
-  MAP * _high_map; // map from WN * to a constant that gives value's high boundary.
-  MAP * _def_wn_map;   // map AUX_ID to definition WN *.
-  MAP * _def_map; //  Map symbol auxiliary Id to definition WN *.
-  MAP * _const_wn_map; // map an integer constant to WHIRL.
-  MAP * _deriv_wn_map; // map AUX_ID to derivation WN *.
-  MAP * _def_cnt_map; // hash aux id to def count
+  std::map<AUX_ID, AUX_ID>  _val_map;   // map from an interger to a value number.
+  std::map<WN *, WN *> _low_map;  // map from WN * to a WN * that gives value's low boundary.
+  std::map<WN *, WN *> _high_map; // map from WN * to a WN * that gives value's high boundary.
+  std::map<AUX_ID, WN *> _def_wn_map;   // map AUX_ID to definition WN *.
+  std::map<AUX_ID, WN *> _def_map; //  Map symbol auxiliary Id to definition WN *.
+  std::map<INT64, WN *> _const_wn_map; // map an integer constant to WHIRL.
+  std::map<AUX_ID, WN *> _deriv_wn_map; // map AUX_ID to derivation WN *.
+  std::map<AUX_ID, unsigned long> _def_cnt_map; // hash aux id to def count
   int _ext_trans;  // do extended transformations.
   
 protected:
@@ -396,20 +396,20 @@ protected:
   int _transform_count;
   MEM_POOL * _pool;
   INT32 _code_bloat_count;
-  MAP * _invar_map;  // hash BB_NODE Id to SC_NODE *
+  std::map<IDTYPE, SC_NODE * > _invar_map;  // hash BB_NODE Id to SC_NODE *
   STACK<SC_NODE *> * _unlink_sc; // scratch field.
   STACK<SC_NODE *> * _tmp_stack; // scratch field.
   SC_NODE * _current_scope; // scratch field, point to current nesting SC_NODE.
 
 private:
-  void Set_map(MAP *, WN *, WN *);
+  void Set_map(std::map<WN *, WN *> &, WN *, WN *);
   SC_NODE * Split(SC_NODE *, SC_NODE *);
   SC_NODE * Do_partition(SC_NODE *);
   void Copy_prop(SC_NODE * sc);
   void Copy_prop(BB_NODE * bb);
   void Copy_prop(WN *);
   unsigned long Get_def_cnt(AUX_ID i) 
-      { return (unsigned long) _def_cnt_map->Get_val((POINTER) i); }
+      { return (unsigned long) _def_cnt_map[i];}
   BOOL Val_mod(SC_NODE *, WN *, BOOL, BOOL);
   BOOL Val_match(WN *);
   void Infer_non_zero(WN *, BOOL);
@@ -439,8 +439,8 @@ protected:
   BOOL Has_side_effect(WN *);
   BOOL Is_aliased(WN *, WN *);
   BOOL Is_kill(SC_NODE *, STACK<SC_NODE *> *, SC_NODE *);
-  BOOL Get_def_vals(BB_NODE *, WN *, STACK<INT> *);
-  BOOL Get_def_vals(SC_NODE *, WN *, STACK<INT> *);
+  BOOL Get_def_vals(BB_NODE *, WN *, std::set<INT64> &);
+  BOOL Get_def_vals(SC_NODE *, WN *, std::set<INT64> &);
   BOOL Maybe_assigned_expr(WN *, WN *);
   BOOL Maybe_assigned_expr(SC_NODE *, WN *, BOOL);
   BOOL Maybe_assigned_expr(BB_NODE *, WN *);
@@ -463,12 +463,9 @@ protected:
   BOOL Can_be_speculative(WN *);
   ST * Get_st(WN *);
   void Delete_branch(BB_NODE *);
-  MAP * Get_invar_map() { return _invar_map ; }
-  void New_invar_map();
-  void Delete_invar_map();
+  std::map<IDTYPE, SC_NODE *> & Get_invar_map() { return _invar_map ; }
   void Hash_invar(BB_NODE *, SC_NODE *);
   void Clear();
-  void Delete();
   void Set_cu(COMP_UNIT * i) { _cu = i; }
   COMP_UNIT * Get_cu();
   WN * Get_const_wn(INT64);
@@ -524,13 +521,13 @@ protected:
   void Prune_block(SC_NODE *);
   void Top_down_do_rev_head_merge(SC_NODE *);
   BOOL Bottom_up_prune(SC_NODE *);
-  MAP * Get_deriv_map() { return _deriv_wn_map; }
-  MAP * Get_high_map() { return _high_map; }
-  MAP * Get_low_map() { return _low_map; }
+  std::map<AUX_ID, WN *> & Get_deriv_map() { return _deriv_wn_map; }
+  std::map<WN *, WN *> & Get_high_map() { return _high_map; }
+  std::map<WN *, WN *> & Get_low_map() { return _low_map; }
   void Infer_shift_count_val(WN *, SC_NODE *);
-  void Set_lo(MAP *, WN *, int);
-  void Set_hi(MAP *, WN *, int);
-  std::pair<bool,int> Clone_val(WN *, WN *, MAP *);
+  void Set_lo(std::map<WN *, WN *> &, WN *, int);
+  void Set_hi(std::map<WN *, WN *> &, WN *, int);
+  std::pair<bool,int> Clone_val(WN *, WN *, std::map<WN *, WN *> &);
   WN * Get_wn_by_aux_id(AUX_ID, WN *);
   ST * Tmp_array_st(MTYPE mtype, int);
   WN * Create_array_store(ST *, WN *, WN *);
@@ -605,7 +602,7 @@ public:
 // Proactive loop fusion transformation.
 class PRO_LOOP_FUSION_TRANS : virtual public IF_MERGE_TRANS {
 private:
-  MAP  *_loop_depth_to_loop_map;  // map from SC tree depth to a list of SC_LOOPs, scratch field
+  std::map<int, SC_LIST *> _loop_depth_to_loop_map;  // map from SC tree depth to a list of SC_LOOPs, scratch field
   SC_LIST * _loop_list;          // a list of SC_LOOPs, scratch field
   int _last_class_id;
   BOOL _edit_loop_class;
@@ -720,10 +717,10 @@ class PRO_LOOP_EXT_TRANS : virtual public IF_MERGE_TRANS {
 private:
     IF_CMP_VAL _next_valnum;
     STACK<IF_CMP_VAL> *  _if_cmp_vals[MAX_IF_CMP_LEVEL]; // A stack of if-compare values at each level
-    MAP * _val_to_sc_map; // Map a IF_CMP_VAL to a SC_NODE *
-    MAP * _wn_to_val_num_map; // Map a WN * to a value number
+    std::map<IF_CMP_VAL, SC_NODE *> _val_to_sc_map; // Map a IF_CMP_VAL to a SC_NODE *
+    std::map<WN *, IF_CMP_VAL> _wn_to_val_num_map; // Map a WN * to a value number
     STACK<WN *> * _key_to_wn_hash[IF_CMP_HASH_SIZE]; // Hash a key to a STACK<WN *> *
-    MAP * _wn_to_wn_map; // Map a WN * to a WN *.
+    std::map<WN *, WN *> _wn_to_wn_map; // Map a WN * to a WN *.
     STACK<WN *> * _wn_list; // a stack of wns.
 private:
     void Get_val(WN *, IF_CMP_VAL *);
@@ -764,7 +761,6 @@ private:
 public:
     PRO_LOOP_TRANS(void) { Clear(); }
     PRO_LOOP_TRANS(COMP_UNIT * i) { Clear(); Set_cu(i); }
-    void Delete();
     void Do_ext_trans(SC_NODE *);
 };
 #endif /*opt_proactive_INCLUDED*/

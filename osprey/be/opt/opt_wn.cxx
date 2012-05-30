@@ -1796,7 +1796,7 @@ BOOL OPCODE_is_volatile(OPCODE opc)
 // 'map' gives a WHIRL-to-WHIRL  map that maps a WHIRL to another WHIRL containing the same value.
 // (TODO: Implementation is incomplete for all operators)
 std::pair<bool,int>
-WN_get_val(WN * wn, MAP* map)
+WN_get_val(WN * wn, std::map<WN *, WN*> & map)
 {
   int val1, val2, val;
   OPERATOR opr = WN_operator(wn);
@@ -1807,8 +1807,8 @@ WN_get_val(WN * wn, MAP* map)
     val = WN_const_val(wn);
     return std::pair<bool, int>(TRUE, val);
   }
-  else if (map) {
-    WN * wn_val = (WN *) map->Get_val((POINTER) wn);
+  else {
+    WN * wn_val = map[wn];
     if (wn_val)
       return WN_get_val(wn_val, map);
   }
@@ -1959,11 +1959,11 @@ Get_diff(WN * wn_match, STACK<WN *> * stack, MEM_POOL * pool)
 
 // Obtain the hashed value in 'map' for 'wn',
 // where map is a hash from 'AUX_ID' to 'WN *'.
-WN * WN_get_deriv(WN * wn, MAP * map)
+WN * WN_get_deriv(WN * wn, std::map<AUX_ID, WN *> &map)
 {
   WN * wn_deriv = NULL;
-  if (map && OPERATOR_is_scalar_load(WN_operator(wn))) 
-    wn_deriv = (WN *) map->Get_val((POINTER) WN_aux(wn));
+  if (OPERATOR_is_scalar_load(WN_operator(wn))) 
+    wn_deriv = map[WN_aux(wn)];
   
   return wn_deriv;
 }
@@ -1982,7 +1982,7 @@ WN * WN_get_deriv(WN * wn, MAP * map)
 //
 // These maps are used to derive value ranges of expressions.
 BOOL
-WN_has_disjoint_val_range(WN * wn1, WN * wn2, MAP * lo_map, MAP* hi_map, MAP * deriv_map)
+WN_has_disjoint_val_range(WN * wn1, WN * wn2, std::map<WN *, WN *> & lo_map, std::map<WN *, WN *> & hi_map, std::map<AUX_ID, WN *> & deriv_map)
 {
   FmtAssert((MTYPE_is_integral(WN_rtype(wn1)) && MTYPE_is_integral(WN_rtype(wn2))),
 	    ("Expect integral values"));

@@ -387,8 +387,6 @@ COMP_UNIT::Pro_loop_trans()
 	    }
 	  }
 	}
-	
-	pro_loop_trans->Delete();
       }
     }
     

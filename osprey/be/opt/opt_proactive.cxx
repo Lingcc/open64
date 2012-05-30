@@ -2183,48 +2183,6 @@ IF_MERGE_TRANS::Clear(void)
   _region_id = 0;
 }
 
-// Create a new _invar_map.
-void
-CFG_TRANS::New_invar_map()
-{
-  _invar_map = CXX_NEW(MAP(CFG_BB_TAB_SIZE, _pool), _pool);
-}
-
-// Delete _invar_map.
-void
-CFG_TRANS::Delete_invar_map()
-{
-  if (_invar_map)
-    CXX_DELETE(_invar_map, _pool);
-  _invar_map = NULL;
-}
-
-// Delete data that live through this object's life time.
-void
-CFG_TRANS::Delete()
-{
-  if (_const_wn_map) {
-    MAP_LIST * tmp;
-    MAP_LIST_ITER map_lst_iter;
-
-    for (UINT32 idx = 0; idx < _const_wn_map->Size(); idx++) {
-      FOR_ALL_NODE(tmp, map_lst_iter, Init(_const_wn_map->Get_bucket(idx))) {
-	WN * wn = (WN *) tmp->Val();
-	if (wn)
-	  WN_Delete(wn);
-      }
-    }
-
-    CXX_DELETE(_const_wn_map, _pool);
-    _const_wn_map = NULL;
-  }
-
-  if (_def_cnt_map)
-    CXX_DELETE(_def_cnt_map, _pool);
-
-  _def_cnt_map = NULL;
-}
-
 // Query whether given aux_id represents a scalar non-address-taken non-virtual variable.
 
 BOOL CFG_TRANS::Is_trackable_var(AUX_ID aux_id)
@@ -2307,7 +2265,7 @@ BOOL CFG_TRANS::Val_mod(SC_NODE * sc, WN * wn, BOOL eval_true, BOOL do_recursive
       Infer_non_zero(wn_cond, FALSE);
   }
 
-  if (_val_map != NULL) {
+  if (!_val_map.empty()) {
     Track_val(sc, sc->First_bb(), wn, do_recursive);
     ret_val = !Val_match(wn);
   }
@@ -2348,8 +2306,6 @@ BOOL CFG_TRANS::Val_mod(SC_NODE * sc, WN * wn, BOOL eval_true)
 // values hashed in _val_map.
 BOOL CFG_TRANS::Val_match(WN * wn)
 {
-  FmtAssert((_val_map != NULL), ("Expect non-NULL _val_map"));
-  
   if (OPERATOR_is_scalar_load(WN_operator(wn))) {
     AUX_ID aux_id = WN_aux(wn);
     AUX_ID val = (AUX_ID) Get_val(aux_id);
@@ -2368,10 +2324,7 @@ BOOL CFG_TRANS::Val_match(WN * wn)
 void
 CFG_TRANS::Delete_val_map()
 {
-  if (_val_map) {
-    CXX_DELETE(_val_map, _pool);
-    _val_map = NULL;
-  }
+  _val_map.clear();
 
   if (_true_val)
     _true_val = NULL;
@@ -2412,9 +2365,7 @@ CFG_TRANS::Init_val_map(WN * wn)
   if (OPERATOR_is_scalar_load(WN_operator(wn))) {
     AUX_ID aux_id = WN_aux(wn);
     if (aux_id) {
-      if (_val_map == NULL)
-	_val_map = CXX_NEW(MAP(CFG_BB_TAB_SIZE, _pool), _pool);
-      _val_map->Add_map((POINTER) aux_id, (POINTER)aux_id);
+      _val_map[aux_id] = aux_id;
     }
   }
 
@@ -2442,18 +2393,15 @@ CFG_TRANS::Get_val(AUX_ID aux_id)
 {
   AUX_ID val = 0;
   if (aux_id)
-    val = (AUX_ID) (unsigned long) _val_map->Get_val((POINTER) aux_id);
+    val = _val_map[aux_id];
   return val;
 }
 
 // Hash aux_id to val.
 void CFG_TRANS::Set_val(AUX_ID aux_id, AUX_ID val)
 {
-  if (aux_id) {
-    MAP_LIST * map_lst = _val_map->Find_map_list((POINTER) aux_id);
-    if (map_lst)
-      map_lst->Set_val((POINTER) val);
-  }
+  if (aux_id) 
+    _val_map[aux_id] = val;
 }
 
 // Interface to invoke alias info queries.
@@ -2739,7 +2687,7 @@ BOOL CFG_TRANS::Is_kill(SC_NODE * sc, STACK<SC_NODE *> * stk, SC_NODE * loop)
 // Walk statements in 'sc', search for store statements that writes the value of 'load',
 // collect all possible values in 'def_vals'. Return FALSE if there exists a definition
 // that can not be evaluated to an interger constant.
-BOOL CFG_TRANS::Get_def_vals(BB_NODE * bb, WN * load, STACK<INT> * def_vals)
+BOOL CFG_TRANS::Get_def_vals(BB_NODE * bb, WN * load, std::set<INT64> & def_vals)
 {
   WN * tmp;
   for (tmp = bb->Firststmt(); tmp != NULL; tmp = WN_next(tmp)) {
@@ -2753,8 +2701,7 @@ BOOL CFG_TRANS::Get_def_vals(BB_NODE * bb, WN * load, STACK<INT> * def_vals)
       OPERATOR opr = WN_operator(wn_data);
       if (opr == OPR_INTCONST) {
 	INT64 val = WN_const_val(wn_data);
-	if (!def_vals->Contains(val))
-	  def_vals->Push(val);
+	def_vals.insert(val);
       }
       else if (opr == OPR_ADD) {
 	WN * kid0 = WN_kid0(wn_data);
@@ -2763,12 +2710,16 @@ BOOL CFG_TRANS::Get_def_vals(BB_NODE * bb, WN * load, STACK<INT> * def_vals)
 	   && (WN_aux(kid0) == WN_aux(tmp))
 	   && (WN_operator(kid1) == OPR_INTCONST)) {
 	  INT64 val = WN_const_val(kid1);
-	  int size = def_vals->Elements();
-	  for (int i = 0; i < size; i++) {
-	    INT64 p_val = def_vals->Bottom_nth(i);
+	  std::set<INT64> new_vals;
+	  std::set<INT64>::iterator set_iter;
+	  for (set_iter = def_vals.begin(); set_iter != def_vals.end(); set_iter++) {
+	    INT64 p_val = *set_iter;
 	    INT64 n_val = p_val + val;
-	    if (!def_vals->Contains(n_val))
-	      def_vals->Push(n_val);
+	    new_vals.insert(n_val);
+	  }
+	  for (set_iter = new_vals.begin(); set_iter != new_vals.end(); set_iter++) {
+	    INT64 val = *set_iter;
+	    def_vals.insert(val);
 	  }
 	}
 	else {
@@ -2786,7 +2737,7 @@ BOOL CFG_TRANS::Get_def_vals(BB_NODE * bb, WN * load, STACK<INT> * def_vals)
 // Walk nodes in 'sc', search for statements that writes the value of 'load',
 // collect all possible values in 'def_vals'. Return FALSE if there exists a
 // definition that can not be evaluated to an interger constant.
-BOOL CFG_TRANS::Get_def_vals(SC_NODE * sc, WN * load, STACK<INT> * def_vals)
+BOOL CFG_TRANS::Get_def_vals(SC_NODE * sc, WN * load, std::set<INT64> & def_vals)
 {
   BB_NODE * tmp = sc->Get_bb_rep();
   if (tmp) {
@@ -2894,7 +2845,6 @@ CFG_TRANS::Can_be_speculative(SC_NODE * sc)
 
 void CFG_TRANS::Remove_val(WN * wn_iter, WN * wn)
 {
-  FmtAssert((_val_map != NULL), ("Expect non-NULL _val_map"));
   OPCODE opc = WN_opcode(wn);
   
   if (OPCODE_is_load(opc)) {
@@ -2918,7 +2868,6 @@ void CFG_TRANS::Remove_val(WN * wn_iter, WN * wn)
 void CFG_TRANS::Track_val(SC_NODE * sc, BB_NODE * bb_entry, WN * wn, BOOL do_recursive)
 {
 
-  FmtAssert(_val_map, ("Expect non-NULL _val_map"));
   BB_NODE * bb = sc->Get_bb_rep();
 
   if (bb != NULL)
@@ -3406,7 +3355,7 @@ CFG_TRANS::Maybe_assigned_expr(WN * wn1, WN * wn_root)
 	&& Is_aliased(wn1, wn_root))
       return TRUE;
   }
-  if (WOPT_Simplify_Bit_Op && (_low_map != NULL) && (_high_map != NULL)) {
+  if (WOPT_Simplify_Bit_Op) {
     // No alias if wn1 is a reduction of a single bit operation on an object, 
     // and wn_root is a bit operation on a different bit of the same object.
     WN * wn_bit_op = WN_get_bit_reduction(wn1);
@@ -3430,7 +3379,7 @@ CFG_TRANS::Maybe_assigned_expr(WN * wn1, WN * wn_root)
 	Match_def(wn_tmp2);
 	Match_def(wn_tmp1);
 
-	if (WN_has_disjoint_val_range(wn_tmp2, wn_tmp1, _low_map, _high_map, _deriv_wn_map))
+	if (WN_has_disjoint_val_range(wn_tmp2, wn_tmp1, _low_map, _high_map, Get_deriv_map()))
 	  return FALSE;
       }
     }
@@ -3858,14 +3807,12 @@ IF_MERGE_TRANS::Is_candidate(SC_NODE * sc1, SC_NODE * sc2, BOOL do_query)
   BOOL no_alias = FALSE;
 
   // Use hashed result.
-  if (_invar_map) {
-    SC_NODE * loop1 = (SC_NODE *) _invar_map->Get_val((POINTER) head1->Id());
-    SC_NODE * loop2 = (SC_NODE *) _invar_map->Get_val((POINTER) head2->Id());
+  SC_NODE * loop1 =  _invar_map[head1->Id()];
+  SC_NODE * loop2 =  _invar_map[head2->Id()];
     
-    if (loop1 && (loop1 == loop2) && 
-	(loop1->Is_pred_in_tree(sc1) || (_region_id == loop1->Id())))
-      no_alias = TRUE;
-  }
+  if (loop1 && (loop1 == loop2) && 
+      (loop1->Is_pred_in_tree(sc1) || (_region_id == loop1->Id())))
+    no_alias = TRUE;
 
   Infer_val_range(sc1, sc2);
 
@@ -4371,13 +4318,8 @@ CFG_TRANS::Hash_def_cnt_map(BB_NODE * bb)
       AUX_ID aux_id = WN_aux(wn_iter);
       unsigned long def_cnt = Get_def_cnt(aux_id);
       unsigned long new_cnt = def_cnt + 1;
+      _def_cnt_map[aux_id] = new_cnt;
 
-      if (def_cnt == 0)
-	_def_cnt_map->Add_map((POINTER) aux_id, (POINTER) new_cnt);
-      else {
-	MAP_LIST * map_lst = _def_cnt_map->Find_map_list((POINTER) aux_id);
-	map_lst->Set_val((POINTER) new_cnt);
-      }
     }
   }
 }
@@ -4386,9 +4328,6 @@ CFG_TRANS::Hash_def_cnt_map(BB_NODE * bb)
 void
 CFG_TRANS::Hash_def_cnt_map(SC_NODE * sc)
 {
-  if (_def_cnt_map == NULL)
-    _def_cnt_map = CXX_NEW(MAP(CFG_BB_TAB_SIZE, _pool), _pool);
-
   BB_NODE * bb = sc->Get_bb_rep();
 
   if (bb != NULL)
@@ -4921,18 +4860,9 @@ CFG_TRANS::Clear()
   _transform_count = 0;
   _pool = NULL;
   _code_bloat_count = 0;
-  _val_map = NULL;
   _true_val = NULL;
-  _invar_map = NULL;
-  _low_map = NULL;
-  _high_map = NULL;
-  _def_wn_map = NULL;
-  _const_wn_map = NULL;
-  _deriv_wn_map = NULL;
   _unlink_sc = NULL;
   _tmp_stack = NULL;
-  _def_map = NULL;
-  _def_cnt_map = NULL;
   _ext_trans = EXT_TRANS_NONE;
   _current_scope = NULL;
 }
@@ -6331,7 +6261,6 @@ PRO_LOOP_FUSION_TRANS::Clear()
 {
   IF_MERGE_TRANS::Clear();
   _last_class_id = 0;
-  _loop_depth_to_loop_map = NULL;
   _loop_list = NULL;
   _edit_loop_class = FALSE;
 }
@@ -6350,11 +6279,11 @@ PRO_LOOP_FUSION_TRANS::Reset_loop_class(SC_NODE * sc, int cur_depth)
   sc->Remove_flag(HAS_SYMM_LOOP);
 
   if (sc->Type() == SC_LOOP) {
-    SC_LIST * sc_list = (SC_LIST *) _loop_depth_to_loop_map->Get_val((POINTER) cur_depth);
+    SC_LIST * sc_list = _loop_depth_to_loop_map[cur_depth];
 
     if (!sc_list) {
       sc_list = (SC_LIST *) CXX_NEW(SC_LIST(sc), _pool);
-      _loop_depth_to_loop_map->Add_map((POINTER) cur_depth, (POINTER) sc_list);
+      _loop_depth_to_loop_map[cur_depth] = sc_list;
     }
   
     sc_list = sc_list->Append(sc, _pool);
@@ -6377,7 +6306,7 @@ PRO_LOOP_FUSION_TRANS::Find_loop_class(SC_NODE * sc)
   FmtAssert(_edit_loop_class, ("Not in edit mode"));
 
   if ((sc->Type() == SC_LOOP) && (sc->Class_id() == 0)) {
-    SC_LIST * sc_list = (SC_LIST *) _loop_depth_to_loop_map->Get_val((POINTER) sc->Depth());
+    SC_LIST * sc_list = _loop_depth_to_loop_map[sc->Depth()];
     SC_LIST_ITER sc_list_iter(sc_list);
     SC_NODE *tmp = NULL;
     int new_id = New_class_id();
@@ -6408,11 +6337,9 @@ PRO_LOOP_FUSION_TRANS::Classify_loops(SC_NODE *sc)
 {
   _edit_loop_class = TRUE;
   OPT_POOL_Push(_pool, MEM_DUMP_FLAG + 1);
-  _loop_depth_to_loop_map = CXX_NEW(MAP(CFG_BB_TAB_SIZE, _pool), _pool);
+  _loop_depth_to_loop_map.clear();
   Reset_loop_class(sc, 0);
   Find_loop_class(sc);
-  CXX_DELETE(_loop_depth_to_loop_map, _pool);
-  _loop_depth_to_loop_map = NULL;
   OPT_POOL_Pop(_pool, MEM_DUMP_FLAG + 1);
   _edit_loop_class = FALSE;
 }
@@ -6609,7 +6536,6 @@ PRO_LOOP_INTERCHANGE_TRANS::Can_interchange(SC_NODE * outer_loop, SC_NODE * inne
 void
 PRO_LOOP_INTERCHANGE_TRANS::Init()
 {
-  New_invar_map();
   _local_stack = CXX_NEW(STACK<SC_NODE *>(_pool), _pool);
   _outer_stack = CXX_NEW(STACK<SC_NODE *>(_pool), _pool);
   _inner_stack = CXX_NEW(STACK<SC_NODE *>(_pool), _pool);
@@ -6621,7 +6547,6 @@ PRO_LOOP_INTERCHANGE_TRANS::Init()
 void
 PRO_LOOP_INTERCHANGE_TRANS::Delete()
 {
-  Delete_invar_map();
   CXX_DELETE(_local_stack, _pool);
   _local_stack = NULL;
   CXX_DELETE(_outer_stack, _pool);
@@ -6911,7 +6836,7 @@ PRO_LOOP_INTERCHANGE_TRANS::Is_disjoint(STACK<SC_NODE *> * stk_def, SC_NODE * sc
   // "if(x == const) {...}".
   SC_NODE * sc_body = sc_first->First_kid_of_type(SC_LP_BODY);
   SC_LIST_ITER kids_iter;
-  STACK<INT> * cond_val = CXX_NEW(STACK<INT>(_pool), _pool);
+  std::set<INT64> cond_val;
   WN * wn_load = NULL;
   SC_NODE * sc_tmp;
 
@@ -6943,19 +6868,20 @@ PRO_LOOP_INTERCHANGE_TRANS::Is_disjoint(STACK<SC_NODE *> * stk_def, SC_NODE * sc
       break;
     }
     int val = WN_const_val(kid1);
+    std::set<INT64>::iterator it = cond_val.find(val);
     if (!wn_load)
       wn_load = kid0;
     else if ((WN_aux(kid0) != WN_aux(wn_load))
-	     || (cond_val && cond_val->Contains(val))) {
+	     || (it != cond_val.end())) {
       is_disjoint = FALSE;
       break;
     }
 
-    cond_val->Push(val);
+    cond_val.insert(val);
   }
 
   if (is_disjoint) {
-    STACK<INT> * def_val = CXX_NEW(STACK<INT>(_pool), _pool);
+    std::set<INT64> def_val;
     // Collect constant values defined by killing defs.
     for (int i = stk_def->Elements() - 1; i >= 0; i--) {
       SC_NODE * sc_iter = stk_def->Top_nth(i);
@@ -6966,22 +6892,9 @@ PRO_LOOP_INTERCHANGE_TRANS::Is_disjoint(STACK<SC_NODE *> * stk_def, SC_NODE * sc
     }
     // Check whether values defined by killing defs are
     // exactly the same as those used in conditional expressions.
-    if (def_val->Elements() != cond_val->Elements())
+    if (def_val != cond_val)
       is_disjoint = FALSE;
-    else {
-      while (!def_val->Is_Empty()) {
-	INT64 val = def_val->Pop();
-	if (!cond_val->Contains(val)) {
-	  is_disjoint = FALSE;
-	  break;
-	}
-      }
-    }
-
-    CXX_DELETE(def_val, _pool);
   }
-  CXX_DELETE(cond_val, _pool);
-
   return is_disjoint;
 }
 
@@ -7751,8 +7664,6 @@ PRO_LOOP_INTERCHANGE_TRANS::Top_down_do_precomp(SC_NODE * outer_loop, SC_NODE * 
 std::pair<INT, INT>
 PRO_LOOP_INTERCHANGE_TRANS::Estimate_bounds(SC_NODE * outer_loop, SC_NODE * inner_loop)
 {
-  FmtAssert((Get_high_map() && Get_deriv_map()), ("Expect non-NULL maps"));
-
   WN * wn_upper = Get_upper_bound(inner_loop);
   if (!wn_upper || !Is_invariant(outer_loop, wn_upper, 0))
     return std::pair<INT, INT> (-1, -1);
@@ -8432,13 +8343,7 @@ CFG_TRANS::Split(SC_NODE * sc1, SC_NODE * sc_loop)
 void
 CFG_TRANS::Add_def_map(AUX_ID aux_id, WN * wn)
 {
-  WN * wn_tmp = (WN *) _def_map->Get_val((POINTER) aux_id);
-  if (wn_tmp == NULL)
-    _def_map->Add_map((POINTER) aux_id, (POINTER) wn);
-  else {
-    MAP_LIST * map_lst = _def_map->Find_map_list((POINTER) aux_id);
-    map_lst->Set_val((POINTER) wn);
-  }
+  _def_map[aux_id] = wn;
 }
 
 // Add an elememt to _def_wn_map.
@@ -8448,14 +8353,10 @@ CFG_TRANS::Add_def_wn_map(WN * wn_key, WN * wn_val)
   OPERATOR opr = WN_operator(wn_key);
   
   if (OPERATOR_is_scalar_load(opr) || OPERATOR_is_scalar_store(opr)) {
-    WN * wn_def = (WN *) _def_wn_map->Get_val((POINTER) WN_aux(wn_key));
+    WN * wn_def = _def_wn_map[WN_aux(wn_key)];
 
-    if (!wn_def) {
-      MAP_LIST * map_lst = _def_wn_map->Find_map_list((POINTER) WN_aux(wn_key));
-      
-      if (map_lst)
-	map_lst->Set_val((POINTER) wn_key);
-    }
+    if (!wn_def) 
+      _def_wn_map[WN_aux(wn_key)] = wn_val;
   }
 }
 
@@ -8470,7 +8371,7 @@ CFG_TRANS::Copy_prop(WN * wn)
     if (OPERATOR_is_scalar_load(opr)) {
       AUX_ID aux_id = WN_aux(wn_kid);
       if (aux_id) {
-	WN * wn_val = (WN *) _def_map->Get_val((POINTER) aux_id);
+	WN * wn_val = _def_map[aux_id];
 	if (wn_val) {
 	  WN_kid(wn, i) = WN_COPY_Tree_With_Map(wn_val); 
 	  continue;
@@ -8699,7 +8600,7 @@ CFG_TRANS::Do_pre_dist(SC_NODE * sc_loop, SC_NODE * outer_loop)
   // 3. All of stores' uses appear in the SC_LOOPs (This is TRUE if the store
   //    has a single-def).
   
-  _def_map = CXX_NEW(MAP(CFG_BB_TAB_SIZE, _pool), _pool);
+  _def_map.clear();
   sc1 = sc_begin;
 
   while (sc1 != sc_loop) {
@@ -8760,7 +8661,6 @@ CFG_TRANS::Do_pre_dist(SC_NODE * sc_loop, SC_NODE * outer_loop)
     sc_begin = Do_partition(sc_loop);
   }
 
-  CXX_DELETE(_def_map, _pool);
   Inc_transform_count();
 
   return sc_begin;
@@ -9352,11 +9252,9 @@ CFG_TRANS::Is_invariant(SC_NODE * sc, BB_NODE * bb, AUX_ID st_index)
   SC_TYPE type = sc->Type();
 
   // Query from hash.
-  MAP * invar_map = Get_invar_map();
+  std::map<IDTYPE, SC_NODE *> & invar_map = Get_invar_map();
   SC_NODE * sc_hash;
-
-  if (invar_map)
-    sc_hash = (SC_NODE *) invar_map->Get_val((POINTER) bb->Id());
+  sc_hash = invar_map[bb->Id()];
 
   if (sc_hash 
       && (sc_hash == sc || sc_hash->Is_pred_in_tree(sc)))
@@ -9417,16 +9315,13 @@ CFG_TRANS::Is_invariant(SC_NODE * sc, BB_NODE * bb, AUX_ID st_index)
 void
 CFG_TRANS::Hash_invar(BB_NODE * bb, SC_NODE * sc)
 {
-  MAP * invar_map = Get_invar_map();
-  if (invar_map) {
-    SC_NODE * sc_tmp = (SC_NODE *) invar_map->Get_val((POINTER) bb->Id());
+  std::map<IDTYPE, SC_NODE *> & invar_map = Get_invar_map();
+  SC_NODE * sc_tmp = invar_map[bb->Id()];
 
-    if (!sc_tmp)
-      invar_map->Add_map((POINTER) bb->Id(), (POINTER) sc);
-    else if ((sc_tmp->Parent() == NULL) || sc->Is_pred_in_tree(sc_tmp)) {
-      MAP_LIST * map_lst = invar_map->Find_map_list((POINTER) bb->Id());    
-      map_lst->Set_val((POINTER) sc);
-    }
+  if (!sc_tmp)
+    invar_map[bb->Id()] = sc;
+  else if ((sc_tmp->Parent() == NULL) || sc->Is_pred_in_tree(sc_tmp)) {
+    invar_map[bb->Id()] = sc;
   }
 }
 
@@ -10171,13 +10066,8 @@ CFG_TRANS::Do_if_cond_tree_height_reduction(SC_NODE * sc1, SC_NODE * sc2)
 void
 CFG_TRANS::Invalidate_invar(BB_NODE * bb)
 {
-  MAP * invar_map = Get_invar_map();
-  if(invar_map) {
-    MAP_LIST * map_lst = invar_map->Find_map_list((POINTER) bb->Id());    
-
-    if (map_lst)
-      map_lst->Set_val((POINTER) NULL);
-  }
+  std::map<IDTYPE, SC_NODE *> & invar_map = Get_invar_map();
+  invar_map[bb->Id()] = (SC_NODE *) NULL;
 }
 
 // Invalidate invariant maps for all BB_NODEs in the given sc.
@@ -11620,7 +11510,7 @@ CFG_TRANS::Do_loop_fusion(SC_NODE * sc, int limit)
   int count = 0;
 
   if (sc_body->Last_bb()) {
-    _def_map = CXX_NEW(MAP(CFG_BB_TAB_SIZE, _pool), _pool);
+    _def_map.clear();
     WN *  wn_index = Get_index_load(sc);
 
     while (sc_tmp && (sc_tmp->Type() == SC_LOOP)) {
@@ -11712,8 +11602,6 @@ CFG_TRANS::Do_loop_fusion(SC_NODE * sc, int limit)
       cfg->Fix_info(sc->Parent());
       cfg->Fix_info(sc->Get_real_parent());
     }
-    
-    CXX_DELETE(_def_map, _pool);
   }
 
   if (count > 0) {
@@ -13360,13 +13248,6 @@ PRO_LOOP_TRANS::Clear(void)
   PRO_LOOP_EXT_TRANS::Clear();
 }
 
-// Delete data that live through this object's life time.
-void
-PRO_LOOP_TRANS::Delete(void)
-{
-  CFG_TRANS::Delete();
-}
-
 // Driver to invoke extended proactive loop optimizations.
 // Without this extension, proactive loop optimizations are limited to
 // SC_NODEs on symmetric paths (see SC_NODE::Has_symmetric_path for
@@ -13440,7 +13321,7 @@ PRO_LOOP_EXT_TRANS::Get_val(WN * wn_cond, IF_CMP_VAL * val)
   UINT32 key;
   STACK<WN *> * stk;
 
-  IF_CMP_VAL ret_val = (IF_CMP_VAL)(INTPTR) _wn_to_val_num_map->Get_val((POINTER) wn_cond);  
+  IF_CMP_VAL ret_val =  _wn_to_val_num_map[wn_cond];
   if (ret_val) {
     *val = ((*val) << MAX_IF_CMP_BITS) + ret_val;
     return;
@@ -13456,7 +13337,7 @@ PRO_LOOP_EXT_TRANS::Get_val(WN * wn_cond, IF_CMP_VAL * val)
       for (int i = 0; i < stk->Elements(); i++) {
 	WN * wn_iter = stk->Top_nth(i);
 	if ((wn_cond == wn_iter) || (WN_Simp_Compare_Trees(wn_cond, wn_iter) == 0)) {
-	  ret_val = (IF_CMP_VAL)(INTPTR) _wn_to_val_num_map->Get_val((POINTER) wn_iter);
+	  ret_val = _wn_to_val_num_map[wn_iter];
 	  break;
 	}
       }
@@ -13464,7 +13345,7 @@ PRO_LOOP_EXT_TRANS::Get_val(WN * wn_cond, IF_CMP_VAL * val)
      
     if (!ret_val && (_next_valnum < MAX_VAL_NUM)) {
       ret_val = _next_valnum;
-      _wn_to_val_num_map->Add_map((POINTER) wn_cond, (POINTER) _next_valnum);
+      _wn_to_val_num_map[wn_cond] =  _next_valnum;
       _next_valnum++;
       if (!stk) 
 	stk = CXX_NEW(STACK<WN *>(_pool), _pool);
@@ -13500,11 +13381,11 @@ PRO_LOOP_EXT_TRANS::Get_inverted_cond(SC_NODE * sc_if)
   if (sc_if->Type() == SC_IF) {
     WN * wn_cond = sc_if->Get_cond();
     if (wn_cond) {
-      wn_invert = (WN *) _wn_to_wn_map->Get_val((POINTER) wn_cond);
+      wn_invert = _wn_to_wn_map[wn_cond];
       if (!wn_invert) {
 	wn_invert = Get_cond(sc_if, TRUE);
 	if (wn_invert) {
-	  _wn_to_wn_map->Add_map((POINTER) wn_cond, (POINTER) wn_invert);
+	  _wn_to_wn_map[wn_cond] = wn_invert;
 	  _wn_list->Push(wn_invert);
 	}
       }
@@ -13555,7 +13436,7 @@ PRO_LOOP_EXT_TRANS::Hash_if_conds(SC_NODE * sc)
     }
     
     if (val) {
-      SC_NODE * sc_rep = (SC_NODE *) _val_to_sc_map->Get_val((POINTER) val);
+      SC_NODE * sc_rep =  _val_to_sc_map[val];
       // Check whether duplicating 'sc' into its sibling SC_IF can make 
       // 'sc' belong to a group of loops having the same nesting if-conditions.
       if (!sc_rep) {
@@ -13581,7 +13462,7 @@ PRO_LOOP_EXT_TRANS::Hash_if_conds(SC_NODE * sc)
 		  next_val = (next_val << MAX_IF_CMP_BITS);
 		}
 		next_val += val;
-		SC_NODE * sc_tmp = (SC_NODE *) _val_to_sc_map->Get_val((POINTER) next_val);
+		SC_NODE * sc_tmp =  _val_to_sc_map[next_val];
 		if (sc_tmp) {
 		  // Remove empty blocks between 'sc' and 'next_if'
 		  SC_NODE * sc1 = sc->Next_sibling();
@@ -13607,7 +13488,7 @@ PRO_LOOP_EXT_TRANS::Hash_if_conds(SC_NODE * sc)
       }
 
       if (!sc_rep) {
-	_val_to_sc_map->Add_map((POINTER) val, (POINTER) sc);
+	_val_to_sc_map[val] = sc;
 	STACK<IF_CMP_VAL> * stk = _if_cmp_vals[level-1];
 	if (!stk)
 	  stk = CXX_NEW(STACK<IF_CMP_VAL>(_pool), _pool);
@@ -13636,9 +13517,6 @@ void
 PRO_LOOP_EXT_TRANS::Init()
 {
   _next_valnum = 1;
-  _val_to_sc_map = CXX_NEW(MAP(CFG_BB_TAB_SIZE, _pool), _pool);
-  _wn_to_val_num_map = CXX_NEW(MAP(CFG_BB_TAB_SIZE, _pool), _pool);
-  _wn_to_wn_map = CXX_NEW(MAP(CFG_BB_TAB_SIZE, _pool), _pool);
   _wn_list = CXX_NEW(STACK<WN *>(_pool), _pool);
 
   for (int i = 0; i < IF_CMP_HASH_SIZE; i++)
@@ -13654,10 +13532,6 @@ PRO_LOOP_EXT_TRANS::Init()
 void
 PRO_LOOP_EXT_TRANS::Clear()
 {
-  _val_to_sc_map = NULL;
-  _wn_to_val_num_map = NULL;
-  _wn_to_wn_map = NULL;
-
   for (int i = 0; i < IF_CMP_HASH_SIZE; i++) 
     _key_to_wn_hash[i] = NULL;
 
@@ -13672,18 +13546,6 @@ PRO_LOOP_EXT_TRANS::Clear()
 void
 PRO_LOOP_EXT_TRANS::Delete()
 {
-  if (_val_to_sc_map) 
-    CXX_DELETE(_val_to_sc_map, _pool);
-  _val_to_sc_map = NULL;
-
-  if (_wn_to_val_num_map)
-    CXX_DELETE(_wn_to_val_num_map, _pool);
-  _wn_to_val_num_map = NULL;
-
-  if (_wn_to_wn_map)
-    CXX_DELETE(_wn_to_wn_map, _pool);
-  _wn_to_wn_map = NULL;
-
   for (int i = 0; i < IF_CMP_HASH_SIZE; i++) {
     STACK<WN *> * stk = _key_to_wn_hash[i];
     if (stk)
@@ -14603,7 +14465,7 @@ PRO_LOOP_EXT_TRANS::Normalize(SC_NODE * sc)
     if (stk) {
       for (int j = 0; j < stk->Elements(); j++) {
 	IF_CMP_VAL val = stk->Top_nth(j);
-	SC_NODE * sc = (SC_NODE *) _val_to_sc_map->Get_val((POINTER) val);
+	SC_NODE * sc = _val_to_sc_map[val];
 	int v_level = Get_level_from_val(val);
 
 	if (v_level != (i + 1)) {
@@ -14640,7 +14502,7 @@ PRO_LOOP_EXT_TRANS::Normalize(SC_NODE * sc)
 	    // fusion candidates.
 	    IF_CMP_VAL next_val = (val >> MAX_IF_CMP_BITS);
 	    if (next_val) {
-	      SC_NODE * cand = (SC_NODE *) _val_to_sc_map->Get_val((POINTER) next_val);
+	      SC_NODE * cand = _val_to_sc_map[next_val];
 
 	      // Limit it to the case that all nodes in the list linked by the 'next'
 	      // field of 'cand' has the same nesting level.
@@ -14803,25 +14665,9 @@ PRO_LOOP_EXT_TRANS::Normalize(SC_NODE * sc)
 void
 CFG_TRANS::Delete_val_range_maps()
 {
-  if (_low_map != NULL)
-    CXX_DELETE(_low_map, _pool);
+  _low_map.clear();
+  _high_map.clear();
 
-  _low_map = NULL;
-
-  if (_high_map != NULL)
-    CXX_DELETE(_high_map, _pool);
-
-  _high_map = NULL;
-
-  if (_deriv_wn_map)
-    CXX_DELETE(_deriv_wn_map, _pool);
-
-  _deriv_wn_map = NULL;
-  
-  if (_def_wn_map)
-    CXX_DELETE(_def_wn_map, _pool);
-
-  _def_wn_map = NULL;
 }
 
 // Get a WHIRL that represents an integer constant of the given value
@@ -14829,18 +14675,11 @@ CFG_TRANS::Delete_val_range_maps()
 WN *
 CFG_TRANS::Get_const_wn(INT64 val)
 {
-  if (!_const_wn_map)
-    _const_wn_map = CXX_NEW(MAP(CFG_BB_TAB_SIZE, _pool), _pool);
-
-  WN * wn = (WN *) _const_wn_map->Get_val((POINTER) val);
+  WN * wn =   _const_wn_map[val];
   
   if (!wn) {
-    MAP_LIST * map_lst = _const_wn_map->Find_map_list((POINTER) val);
-
-    if (map_lst) {
-      wn = WN_CreateIntconst(OPR_INTCONST, MTYPE_I8, MTYPE_V, val);
-      map_lst->Set_val((POINTER) wn);
-    }
+    wn = WN_CreateIntconst(OPR_INTCONST, MTYPE_I8, MTYPE_V, val);
+    _const_wn_map[val] = wn;
   }
 
   return wn;
@@ -14849,9 +14688,9 @@ CFG_TRANS::Get_const_wn(INT64 val)
 // Set the lower bound for 'wn_key', if 'wn_key' already has a lower bound,
 // tighten it if possible.
 void
-CFG_TRANS::Set_lo(MAP * map, WN * wn_key, int val)
+CFG_TRANS::Set_lo(std::map<WN *, WN *> & map, WN * wn_key, int val)
 {
-  WN * wn_tmp = (WN *) map->Get_val((POINTER) wn_key);
+  WN * wn_tmp =  map[wn_key];
   int val_tmp;
 
   if (wn_tmp) {
@@ -14868,9 +14707,9 @@ CFG_TRANS::Set_lo(MAP * map, WN * wn_key, int val)
 // Set the upper bound for 'wn_key', if 'wn_key' already has an upper bound,
 // tighten it if possible.
 void
-CFG_TRANS::Set_hi(MAP * map, WN * wn_key, int val)
+CFG_TRANS::Set_hi(std::map<WN *, WN *> & map, WN * wn_key, int val)
 {
-  WN * wn_tmp = (WN *) map->Get_val((POINTER) wn_key);
+  WN * wn_tmp = map[wn_key];
   int val_tmp;
 
   if (wn_tmp) {
@@ -14886,9 +14725,9 @@ CFG_TRANS::Set_hi(MAP * map, WN * wn_key, int val)
 
 // Set up map of wn_key to wn_val.  Update _def_wn_map is necessary.
 void
-CFG_TRANS::Set_map(MAP * map, WN * wn_key, WN * wn_val)
+CFG_TRANS::Set_map(std::map<WN *, WN *> &map, WN * wn_key, WN * wn_val)
 {
-  map->Override_add_map((POINTER) wn_key, (POINTER) wn_val);
+  map[wn_key] = wn_val;
   Add_def_wn_map(wn_key, wn_val);
 }
 
@@ -14976,37 +14815,31 @@ CFG_TRANS::Infer_val_range(WN * wn, BOOL set_high, BOOL set_low)
       if (WN_operator(op2) == OPR_INTCONST) {
 	INT64 r_val = WN_const_val(op2);
 
-	if (_low_map) {
-	  wn_tmp = (WN *) _low_map->Get_val((POINTER) wn);
-	  if (wn_tmp) {
-	    p_val = WN_get_val(wn_tmp, _low_map);
-	    val = p_val.second;	    
-	    if (p_val.first) {
-	      if (r_val > 0) {
-		INT64 new_val = val/ r_val;
-		Set_lo(_low_map, op1, new_val);
-		Infer_val_range(op1, TRUE, TRUE);
-	      }
+	wn_tmp =  _low_map[wn];
+	if (wn_tmp) {
+	  p_val = WN_get_val(wn_tmp, _low_map);
+	  val = p_val.second;	    
+	  if (p_val.first) {
+	    if (r_val > 0) {
+	      INT64 new_val = val/ r_val;
+	      Set_lo(_low_map, op1, new_val);
+	      Infer_val_range(op1, TRUE, TRUE);
 	    }
 	  }
 	}
 	
-	if (_high_map) {
-	  wn_tmp = (WN *) _high_map->Get_val((POINTER) wn);
-
-	  if (wn_tmp) {
-	    p_val =  WN_get_val(wn_tmp,  _high_map);
-	    val = p_val.second;
-	    if (p_val.first) {
-	      if (r_val > 0) {
-		INT64 new_val = val / r_val;
-		Set_hi(_high_map, op1, new_val);
-		Infer_val_range(op1, TRUE, TRUE);
-	      }
+	wn_tmp =  _high_map[wn];
+	if (wn_tmp) {
+	  p_val =  WN_get_val(wn_tmp,  _high_map);
+	  val = p_val.second;
+	  if (p_val.first) {
+	    if (r_val > 0) {
+	      INT64 new_val = val / r_val;
+	      Set_hi(_high_map, op1, new_val);
+	      Infer_val_range(op1, TRUE, TRUE);
 	    }
 	  }
 	}
-
       }
 
       break;
@@ -15016,32 +14849,27 @@ CFG_TRANS::Infer_val_range(WN * wn, BOOL set_high, BOOL set_low)
       op2 = WN_kid(wn, 1);
 
       if (WN_operator(op2) == OPR_INTCONST) {
-	if (_low_map) {
-	  wn_tmp = (WN *) _low_map->Get_val((POINTER) wn);
-	  if (wn_tmp) {
-	    p_val = WN_get_val(wn_tmp, _low_map);
-	    val = p_val.second;	    
-	    if (p_val.first) {
-	      INT64 new_val = -1 * WN_const_val(op2) + val;
-	      wn_tmp = Get_const_wn(new_val);
-	      Set_map(_low_map, op1, wn_tmp);
-	      Infer_val_range(op1, TRUE, TRUE);
-	    }
+	wn_tmp =  _low_map[wn];
+	if (wn_tmp) {
+	  p_val = WN_get_val(wn_tmp, _low_map);
+	  val = p_val.second;	    
+	  if (p_val.first) {
+	    INT64 new_val = -1 * WN_const_val(op2) + val;
+	    wn_tmp = Get_const_wn(new_val);
+	    Set_map(_low_map, op1, wn_tmp);
+	    Infer_val_range(op1, TRUE, TRUE);
 	  }
 	}
-	
-	if (_high_map) {
-	  wn_tmp = (WN *) _high_map->Get_val((POINTER) wn);
-	  
-	  if (wn_tmp) {
-	    p_val =  WN_get_val(wn_tmp,  _high_map);
-	    val = p_val.second;
-	    if (p_val.first) {
-	      INT64 new_val = -1 * WN_const_val(op2) + val;
-	      wn_tmp = Get_const_wn(new_val);
-	      Set_map(_high_map, op1, wn_tmp);
-	      Infer_val_range(op1, TRUE, TRUE);
-	    }
+
+	wn_tmp = _high_map[wn];
+	if (wn_tmp) {
+	  p_val =  WN_get_val(wn_tmp,  _high_map);
+	  val = p_val.second;
+	  if (p_val.first) {
+	    INT64 new_val = -1 * WN_const_val(op2) + val;
+	    wn_tmp = Get_const_wn(new_val);
+	    Set_map(_high_map, op1, wn_tmp);
+	    Infer_val_range(op1, TRUE, TRUE);
 	  }
 	}
       }
@@ -15053,47 +14881,43 @@ CFG_TRANS::Infer_val_range(WN * wn, BOOL set_high, BOOL set_low)
       op1 = WN_kid(wn, 0);
       op2 = WN_kid(wn, 1);
 
-      if (_low_map) {
-	wn_tmp = (WN * ) _low_map->Get_val((POINTER) wn);
+      wn_tmp = _low_map[wn];
 
-	if (wn_tmp) {
-	  p_val = WN_get_val(wn_tmp,  _low_map);
-	  val = p_val.second;
-	  if (p_val.first) {
-	    wn_tmp = (WN *) _low_map->Get_val((POINTER) op2);
+      if (wn_tmp) {
+	p_val = WN_get_val(wn_tmp,  _low_map);
+	val = p_val.second;
+	if (p_val.first) {
+	  wn_tmp = _low_map[op2];
 	    
-	    if (wn_tmp) {
-	      p_val = WN_get_val(op2, _low_map);
-	      val2 = p_val.second;
-	      if  (p_val.first) {
-		INT64 new_val = val2 + val;
-		wn_tmp = Get_const_wn(new_val);
-		Set_map(_low_map, op1, wn_tmp);
-		Infer_val_range(op1, TRUE, TRUE);
-	      }
+	  if (wn_tmp) {
+	    p_val = WN_get_val(op2, _low_map);
+	    val2 = p_val.second;
+	    if  (p_val.first) {
+	      INT64 new_val = val2 + val;
+	      wn_tmp = Get_const_wn(new_val);
+	      Set_map(_low_map, op1, wn_tmp);
+	      Infer_val_range(op1, TRUE, TRUE);
 	    }
 	  }
 	}
       }
 
-      if (_high_map) {
-	wn_tmp = (WN *) _high_map->Get_val((POINTER) wn);
+      wn_tmp = _high_map[wn];
 
-	if (wn_tmp) {
-	  p_val = WN_get_val(wn_tmp,  _high_map);
-	  val = p_val.second;
-	  if (p_val.first) {
-	    wn_tmp = (WN *) _high_map->Get_val((POINTER) op2);
+      if (wn_tmp) {
+	p_val = WN_get_val(wn_tmp,  _high_map);
+	val = p_val.second;
+	if (p_val.first) {
+	  wn_tmp =  _high_map[op2];
 	  
-	    if (wn_tmp) {
-	      p_val = WN_get_val(op2,  _high_map);
-	      val2 = p_val.second;
-	      if (p_val.first) {
-		INT64 new_val = val2 + val;
-		wn_tmp = Get_const_wn(new_val);
-		Set_map(_high_map, op1, wn_tmp);
-		Infer_val_range(op1, TRUE, TRUE);
-	      }
+	  if (wn_tmp) {
+	    p_val = WN_get_val(op2,  _high_map);
+	    val2 = p_val.second;
+	    if (p_val.first) {
+	      INT64 new_val = val2 + val;
+	      wn_tmp = Get_const_wn(new_val);
+	      Set_map(_high_map, op1, wn_tmp);
+	      Infer_val_range(op1, TRUE, TRUE);
 	    }
 	  }
 	}
@@ -15226,7 +15050,7 @@ CFG_TRANS::Infer_lp_bound_val(SC_NODE * sc_lcp)
 	  
 	  WN * wn_lhs = WN_kid0(wn_cond);
 	  if (OPERATOR_is_scalar_load(WN_operator(wn_lhs)))
-	    _deriv_wn_map->Override_add_map((POINTER) WN_aux(wn_lhs), (POINTER) wn_cond);
+	    _deriv_wn_map[WN_aux(wn_lhs)] = wn_cond;
 	}
       }
     }
@@ -15240,11 +15064,11 @@ CFG_TRANS::Infer_val_range(SC_NODE * sc1, SC_NODE * sc2)
 {
   SC_NODE * sc_lcp = sc1->Find_lcp(sc2);
 
-  if (_invar_map || Do_ext_trans()) {
-    _low_map = CXX_NEW(MAP(CFG_BB_TAB_SIZE, _pool), _pool);
-    _high_map = CXX_NEW(MAP(CFG_BB_TAB_SIZE, _pool), _pool);
-    _def_wn_map = CXX_NEW(MAP(CFG_BB_TAB_SIZE, _pool), _pool);
-    _deriv_wn_map = CXX_NEW(MAP(CFG_BB_TAB_SIZE, _pool), _pool);
+  if (Do_ext_trans()) {
+    _low_map.clear();
+    _high_map.clear();
+    _def_wn_map.clear();
+    _deriv_wn_map.clear();
     SC_NODE * nesting_lp = NULL;
 
     while (sc_lcp) {
@@ -15290,16 +15114,11 @@ void
 CFG_TRANS::Match_def(WN * wn)
 {
   if (OPERATOR_is_scalar_load(WN_operator(wn))) {
-    if (_def_wn_map) {
-      WN * wn_def = (WN *) _def_wn_map->Get_val((POINTER) WN_aux(wn));
+    WN * wn_def =  _def_wn_map[WN_aux(wn)];
 
-      if (wn_def && (wn_def != wn)) {
-	if (_low_map) 
-	  _low_map->Override_add_map((POINTER) wn, (POINTER) wn_def);
-
-	if (_high_map) 
-	  _high_map->Override_add_map((POINTER) wn, (POINTER) wn_def);
-      }
+    if (wn_def && (wn_def != wn)) {
+      _low_map[wn] = wn_def;
+      _high_map[wn] = wn_def;
     }
   }
   
@@ -15331,7 +15150,7 @@ CFG_TRANS::Get_wn_by_aux_id(AUX_ID aux_id, WN * wn)
 // 'map' gives a WHIRL-to-WHIRL map that maps a WHIRL to another WHIRL containing the same value.
 // For scalar loads in 'wn1', clone the values from nodes in 'wn2'.
 std::pair<bool,int> 
-CFG_TRANS::Clone_val(WN * wn1, WN * wn2, MAP * map)
+CFG_TRANS::Clone_val(WN * wn1, WN * wn2, std::map<WN *, WN *> & map)
 {
   OPERATOR opr = WN_operator(wn1);
   INT val, val1, val2;
