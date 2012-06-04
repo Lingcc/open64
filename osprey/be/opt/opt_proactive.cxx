@@ -5294,7 +5294,7 @@ PRO_LOOP_INTERCHANGE_TRANS::Do_push_nodes
 // }
 //
 // Caller of this routine should ensure the legality.
-BOOL
+void
 PRO_LOOP_INTERCHANGE_TRANS::Do_swap_if(SC_NODE * sc_if)
 {
   SC_NODE * sc_then = sc_if->First_kid();

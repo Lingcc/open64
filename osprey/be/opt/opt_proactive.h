@@ -337,7 +337,7 @@ private:
     BOOL Do_hoist_next_siblings(SC_NODE *);
     std::pair<SC_NODE *, SC_NODE *> Do_insert_defs(SC_NODE *, STACK<SC_NODE *> *);
     void Do_push_nodes(SC_NODE *, SC_NODE *, SC_NODE *, SC_NODE *);
-    BOOL Do_swap_if(SC_NODE *);
+    void Do_swap_if(SC_NODE *);
     void Top_down_do_loop_unswitch(SC_NODE *);
     void Hoist_killing_defs(SC_NODE *, SC_NODE *, int);
     std::pair<INT, INT> Estimate_bounds(SC_NODE *, SC_NODE *);
