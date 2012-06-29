@@ -6508,8 +6508,10 @@ WGEN_Expand_Expr (gs_t exp,
               WN *target_wn = WGEN_Address_Of(opnd0);
               WN *result_wn = WGEN_Expand_Expr (t, TRUE /* for return_in_mem*/,
                                                 0, 0, 0, 0, FALSE, FALSE, target_wn);
-              wn = result_wn;
-              WN_set_rtype(wn, MTYPE_V);
+              if (result_wn != NULL) {
+                wn = result_wn;
+                WN_set_rtype(wn, MTYPE_V);
+              }
               break;
             }
           }
