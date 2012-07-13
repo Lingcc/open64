@@ -3737,6 +3737,21 @@ CODEMAP::Add_expr(WN *wn, OPT_STAB *opt_stab, STMTREP *stmt, CANON_CR *ccr,
 	cr->Set_call_op_aux_id (WN_st_idx(wn));
         break;
 #endif
+     // Fix bug966: for SELECT, both Kid 1 and Kid 2 must have res as the result type
+      case OPR_SELECT:
+        if (cr->Get_opnd(1)->Dtyp() != cr->Get_opnd(2)->Dtyp())
+          for ( INT index = 1; index < cr->Kid_count(); index++) {
+            CODEREP *opnd = cr->Opnd(index);
+           if (cr->Dtyp() != opnd->Dtyp()) {
+              OPCODE   opc = OPCODE_make_op(OPR_CVT, cr->Dtyp(), opnd->Dtyp());
+              CODEREP *cvt_cr = Add_unary_node(opc, opnd);
+              cr->Set_opnd(index, cvt_cr);
+            }
+          }
+        else {
+          cr->Set_dtyp(cr->Get_opnd(1)->Dtyp());
+        }
+        break;
     }
 
     BOOL do_canonicalization = TRUE;
