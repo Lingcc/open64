@@ -1502,6 +1502,10 @@ IPO_INLINE::IPO_INLINE (IPA_NODE *caller_node,
 
 #if (!defined(_STANDALONE_INLINER) && !defined(_LIGHTWEIGHT_INLINER))
   if (IPA_Enable_DST) {
+      // Enter the files in callee dst to caller dst, 
+      DST_Enter_Callee_File_Dst(Caller_file_dst(), Callee_file_dst());
+
+      // Set cross file id
       Set_callee_cross_file_id(DST_get_cross_file_id (Caller_dst(),
 						      Callee_dst(),
 						      Caller_file_dst(),

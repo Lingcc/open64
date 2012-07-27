@@ -230,7 +230,8 @@ extern void DST_end_PU(void);
 extern DST_INFO_IDX 
 DST_mk_inlined_subroutine(ST_IDX low_pc,
 			  ST_IDX high_pc,
-			  DST_INFO_IDX abstract_origin);
+			  DST_INFO_IDX abstract_origin,
+			  DST_TYPE abstract_dst);
 
 
 /* Creates a DW_TAG_subprogram entry and returns its idx.
@@ -721,7 +722,8 @@ DST_mk_cross_inlined_subroutine(
                  USRCPOS       ,        
                  char          *,      
                  char          *,
-                 DST_INFO_IDX );     
+                 DST_INFO_IDX  ,
+                 DST_TYPE);     
 #endif
 
 #if defined(_SUPPORT_IPA) || defined(_STANDALONE_INLINER) || defined(_LEGO_CLONER)
