@@ -4538,7 +4538,8 @@ IPO_INLINE::Post_Process_Caller (IPO_INLINE_AUX& aux)
         {
           dst1 = DST_mk_inlined_subroutine(stidx,
                                            stidx+ST_index(cp),
-                                           get_abstract_origin(Callee_dst()));
+                                           get_abstract_origin(Callee_dst()),
+                                           Callee_file_dst());
           DST_RESET_assoc_fe (DST_INFO_flag(DST_INFO_IDX_TO_PTR(dst1)));
           DST_append_child (Caller_dst(), dst1);       
         }
