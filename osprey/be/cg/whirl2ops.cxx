@@ -2027,8 +2027,8 @@ Handle_LDID (WN *ldid, TN *result, OPCODE opcode)
         }
       }
 #elif  defined(TARG_X8664)
-      if( OP_NEED_PAIR( ST_mtype(WN_st(ldid) ) ) ){
-        Expand_Copy( result, ldid_result, ST_mtype(WN_st(ldid)), &New_OPs );
+      if( OP_NEED_PAIR( WN_rtype(ldid) ) ){
+        Expand_Copy( result, ldid_result,  WN_rtype(ldid), &New_OPs );
       } else {
         Exp_COPY (result, ldid_result, &New_OPs);
       }
