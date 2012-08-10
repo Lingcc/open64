@@ -702,6 +702,9 @@ DST_lexical_block_add_name(DST_LEXICAL_BLOCK *, char *);
 extern char *
 DST_get_file(mUINT16 , UINT64 *, UINT64 *, char **);
 
+extern char *
+DST_get_dirname(mUINT16);
+
 extern void
 DST_subprogram_concrete_to_abstract(DST_INFO_IDX);
 

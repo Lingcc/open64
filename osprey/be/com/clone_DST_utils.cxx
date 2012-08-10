@@ -755,7 +755,6 @@ DST_Enter_Callee_File_Dst(DST_TYPE caller_file_dst,
         file = DST_FILE_IDX_TO_PTR(callee_idx);
         file_size = DST_FILE_NAME_size(file);
         fmod_time = DST_FILE_NAME_modt(file);
-        extern char *DST_get_dirname(mUINT16 ordinal);
 
         dirname = DST_get_dirname(DST_FILE_NAME_dir(file));
         filename =  DST_STR_IDX_TO_PTR(DST_FILE_NAME_name(file));

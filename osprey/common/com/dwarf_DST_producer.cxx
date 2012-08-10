@@ -587,7 +587,7 @@ DST_get_ordinal_num(DST_DIR_IDX dir_idx, char *dir_name)
 }
 
 /* get the include directory name of a given ordinal */
-static char *
+char *
 DST_get_dirname(mUINT16 ordinal)
 {
     DST_DIR_IDX d_idx = DST_get_include_dirs();
