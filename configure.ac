@@ -1,4 +1,5 @@
 Copyright 2010 Hewlett Packard Company
+Copyright (C) 2012 Advanced Micro Devices, Inc.  All Rights Reserved.
 
 This file is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -94,6 +95,13 @@ case "$BUILD_OPTIMIZE" in
     AC_MSG_ERROR(["BUILD_OPTIMIZE=$BUILD_OPTIMIZE is not supported"])
     ;;
 esac
+
+# TODO cleanup Fortran Front-End (FFE) so that extra debugging checks
+# can be enabled when BUILD_OPTIMIZE is set to DEBUG.
+AC_ARG_WITH(build-ffe-optimize,
+[  --with-build-ffe-optimize=DEFAULT|DEBUG Use DEFAULT or DEBUG flags in FFE build],
+BUILD_FFE_OPTIMIZE="$with_build_ffe_optimize",
+BUILD_FFE_OPTIMIZE=DEFAULT)
 
 AC_ARG_WITH(build-lib-optimize,
 [  --with-build-lib-optimize=DEFAULT|DEBUG Use DEFAULT or DEBUG flags in library build.
@@ -356,6 +364,7 @@ AC_SUBST([BUILD_HOST])
 AC_SUBST([BUILD_TARGET])
 AC_SUBST([BUILD_VENDOR])
 AC_SUBST([BUILD_OPTIMIZE])
+AC_SUBST([BUILD_FFE_OPTIMIZE])
 AC_SUBST([BUILD_LIB_OPTIMIZE])
 AC_SUBST([BUILD_COMPILER])
 AC_SUBST([BUILD_BOTH])

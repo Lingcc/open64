@@ -1,6 +1,6 @@
 # -*- Makefile -*-
 #
-#  Copyright (C) 2011 Advanced Micro Devices, Inc.  All Rights Reserved.
+#  Copyright (C) 2011-2012 Advanced Micro Devices, Inc.  All Rights Reserved.
 #
 #  Copyright (C) 2010 Hewlett Packard Company
 #
@@ -110,6 +110,9 @@ ifndef BUILD_TYPE
 endif
 ifndef BUILD_OPTIMIZE
      BUILD_OPTIMIZE = @BUILD_OPTIMIZE@
+endif
+ifndef BUILD__FFE_OPTIMIZE
+     BUILD_FFE_OPTIMIZE = @BUILD_FFE_OPTIMIZE@
 endif
 ifndef BUILD_PCH
      BUILD_PCH      = DEFAULT
