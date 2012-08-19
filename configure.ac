@@ -144,6 +144,16 @@ AS_IF([test "x$enable_fortran" != "xno"], [
   BUILD_FORTRAN=YES
 ])
 
+# Set whether WHIRL a node contains a debugging ID
+AC_ARG_ENABLE([whirl_id],
+  AS_HELP_STRING([--enable-whirl-id], [Enable debugging ID in WHIRL node]))
+
+AS_IF([test "x$enable_whirl_id" = "xyes"], [
+  WHIRL_HAS_ID_FIELD=YES
+], [
+  WHIRL_HAS_ID_FIELD=NO
+])
+
 # Set whether to skip IPA support (default NO).
 AC_ARG_ENABLE([ipa],
   AS_HELP_STRING([--disable-ipa], [Disable IPA compilation support (EXPERIMENTAL)]))
@@ -383,6 +393,7 @@ AC_SUBST([COMPILER_TARG_DIR])
 AC_SUBST([TARG_INFO_NAME])
 AC_SUBST([BUILD_GNU3])
 AC_SUBST([BUILD_FORTRAN])
+AC_SUBST([WHIRL_HAS_ID_FIELD])
 AC_SUBST([BUILD_SKIP_IPA])
 AC_SUBST([BUILD_TYPE])
 AC_SUBST([GCC_CONFIGURE_TARG])

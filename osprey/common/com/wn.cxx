@@ -545,7 +545,7 @@ void Check_Traced_Wn_Node(WN *n)
 {
    if (n && (n == trace_wn_node 
              || trace_wn_mapid != -1 && WN_map_id(n) == trace_wn_mapid
-#ifdef USE_UNIQUE_MAP_ID_FOR_DEBUG
+#ifdef WHIRL_USE_UNIQUE_ID_FOR_DEBUG
              || trace_wn_id != 0 && trace_wn_id == WN_id(n)
 #endif
              ) ) {
@@ -557,7 +557,7 @@ static set<UINT32> copied_ids;
 
 void Set_Trace_Wn_id(UINT32 wn_id) 
 { 
-#ifdef USE_UNIQUE_MAP_ID_FOR_DEBUG
+#ifdef WHIRL_USE_UNIQUE_ID_FOR_DEBUG
    trace_wn_id = wn_id; 
    copied_ids.insert(wn_id);
 #endif
@@ -565,7 +565,7 @@ void Set_Trace_Wn_id(UINT32 wn_id)
 
 void Trace_Wn_Copy(const WN *wn, const WN *src_wn)
 {
-#ifdef USE_UNIQUE_MAP_ID_FOR_DEBUG
+#ifdef WHIRL_USE_UNIQUE_ID_FOR_DEBUG
    set<UINT32>::iterator itr = copied_ids.find(WN_id(src_wn));
    if (itr != copied_ids.end()) {
       // found src_wn's wn_id in copied list
