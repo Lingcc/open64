@@ -196,6 +196,8 @@ LIB2_BUILD_ABI=
 LIB2_BUILD_ARCH=
 LIB2_BUILD_HOST=
 
+CYGNUS_CONFIGURE_CFLAGS=
+
 # Set variables based on the host machine that the compiler will run on.
 case "$host" in
 	x86_64*-*-linux*)
@@ -204,6 +206,7 @@ case "$host" in
 		BUILD_HOST=X8664
 		CYGNUS_CONFIGURE_HOST=i686-open64-linux
 		GCC_CONFIGURE_HOST=x86_64-redhat-linux
+		GCC_CONFIGURE_COMPILER+=" -m64"
 		;;
 	i*86*-*-linux*)
 		BUILD_ABI=I32BIT
@@ -211,6 +214,8 @@ case "$host" in
 		BUILD_HOST=IA32
 		CYGNUS_CONFIGURE_HOST=i686-open64-linux
 		GCC_CONFIGURE_HOST=x86_64-redhat-linux
+		GCC_CONFIGURE_COMPILER+=" -m32"
+		CYGNUS_CONFIGURE_CFLAGS="-m32"
 		;;
 	ia64*-*-linux*)
 		BUILD_ABI=I64BIT
@@ -224,7 +229,6 @@ case "$host" in
 		;;
 esac
 
-CYGNUS_CONFIGURE_CFLAGS=
 BUILD_VENDOR=
 
 # Set variables based on the target machine that the compiler will generate
@@ -243,7 +247,6 @@ case "$target" in
 		LIB2_BUILD_ARCH=X8664
 		CYGNUS_CONFIGURE_TARG=x86_64-open64-linux
 		GCC_CONFIGURE_TARG=x86_64-redhat-linux
-		GCC_CONFIGURE_COMPILER+=" -m64"
 		GCC_CONFIGURE_CFLAGS+=" -DTARG_X8664"
 		;;
 	i*86*-*-linux*)
@@ -259,9 +262,7 @@ case "$target" in
 		LIB2_BUILD_ARCH=X8664
 		CYGNUS_CONFIGURE_TARG=x86_64-open64-linux
 		GCC_CONFIGURE_TARG=x86_64-redhat-linux
-		GCC_CONFIGURE_COMPILER+=" -m32"
 		GCC_CONFIGURE_CFLAGS+=" -DTARG_X8664"
-		CYGNUS_CONFIGURE_CFLAGS="-m32"
 		;;
 	ia64*-*-linux*)
 		MACHINE_TYPE=ia64
