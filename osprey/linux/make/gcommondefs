@@ -1,7 +1,7 @@
 # -*- Makefile -*-
 #
 #
-#  Copyright (C) 2009 Advanced Micro Devices, Inc.  All Rights Reserved.
+#  Copyright (C) 2009, 2012 Advanced Micro Devices, Inc.  All Rights Reserved.
 #
 #  Copyright (C) 2000, 2001 Silicon Graphics, Inc.  All Rights Reserved.
 #
@@ -200,6 +200,15 @@ ifeq ($(BUILD_ARCH), IA32)
   CCNAME  += -m32
   C++NAME += -m32
   F90 += -m32
+  ifeq ($(BUILD_COMPILER), GNU)
+    # Adding -mfpmath=sse -msse, to prevent compiler built
+    # 32 or 64 bit from producing different code in GRA.
+    # Note that -ffloat-store should be just as effective
+    # but -mfpmath=sse -msse produces better code.
+    CCNAME  += -mfpmath=sse -msse2
+    C++NAME += -mfpmath=sse -msse2
+    F90 += -mfpmath=sse -msse2
+  endif
 endif
 
 ifeq ($(BUILD_ARCH), X8664)
