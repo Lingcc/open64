@@ -171,6 +171,7 @@ TRANS_SRCS = \
 	cwh_pdgcs.cxx  \
 	cwh_preg.cxx   \
 	cwh_types.cxx  \
+	cwh_targ_info.cxx \
 	cwh_stab.cxx   \
 	cwh_stmt.cxx   \
 	cwh_stk.cxx    \
