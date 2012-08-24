@@ -866,12 +866,12 @@ DST_enter_inlined_subroutine(DST_IDX parent,
         idx = DST_mk_inlined_subroutine (low_pc, high_pc,
 					     abstract_origin, abstract_file_dst); 
 
-        DST_append_child(parent, idx);
-
         DST_enter_cloned_childs (idx, inl_routine, symtab,
 				     caller_file_dst, callee_file_dst,
 				     file_index, TRUE, caller_file_m,
 				     callee_file_m); 
+
+        DST_append_child(parent, idx);
     }
 #if (!defined(_LEGO_CLONER))
     else {
