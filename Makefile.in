@@ -152,8 +152,7 @@ FIRST_COMPONENTS = \
 		$(NATIVE_BUILD_DIR)/libelfutil \
 		$(NATIVE_BUILD_DIR)/libdwarf \
 		$(NATIVE_BUILD_DIR)/libunwindP \
-		$(NATIVE_BUILD_DIR)/libcif \
-		$(NATIVE_BUILD_DIR)/arith
+		$(NATIVE_BUILD_DIR)/libcif
 
 NATIVE_COMPONENTS = $(BASIC_COMPONENTS) $(TARGET_EXTRA_OBJ)  \
                     $(GNU4_FE_COMPONENTS) $(FORT_FE_COMPONENTS) \
@@ -455,8 +454,8 @@ endif
 ifeq ($(BUILD_FORTRAN), YES)
 	$(MAKE) -C $(NATIVE_BUILD_DIR)/crayf90 clobber	
 	$(MAKE) -C $(NATIVE_BUILD_DIR)/whirl2f clobber 
-endif
 	$(MAKE) -C $(NATIVE_BUILD_DIR)/arith clobber
+endif
 	$(MAKE) -C $(NATIVE_BUILD_DIR)/include clobber
 	$(MAKE) -C $(NATIVE_BUILD_DIR)/libspin_4_2_0 clobber
 ifeq ($(MACHINE_TYPE), ia64)

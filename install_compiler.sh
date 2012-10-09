@@ -58,6 +58,9 @@ fi
 
 if [ -z "$3" ]; then
 	CROSS_TARGET=""
+	if [ $1 = "PPC32" ]; then
+		ARCH="ppc"
+	fi
 else
     CROSS_TARGET=$3
 fi
@@ -91,6 +94,7 @@ x86_64 )
 ppc )
     BUILD_HOST="ppc32"
     TARG_HOST="ppc32"
+    INSTALL_FORTRAN="NO"
     AREA="osprey/targppc32_ppc32"
     PHASE_DIR_PREFIX="ppc32"
     PREBUILD_INTERPOS="ppc32-linux"
@@ -197,7 +201,6 @@ INSTALL_DRIVER () {
     if [ "$ARCH" = "PPC32" ]; then
     INSTALL_EXEC_SUB ${AREA}/driver/driver  ${BIN_DIR}/powercc
     INSTALL_EXEC_SUB ${AREA}/driver/driver  ${BIN_DIR}/powercc-${VERSION}
-    ln -sf ${BIN_DIR}/powercc  ${BIN_DIR}/${CROSS_TARGET}-opencc
     else
     INSTALL_EXEC_SUB ${AREA}/driver/driver  ${BIN_DIR}/opencc
     INSTALL_EXEC_SUB ${AREA}/driver/driver  ${BIN_DIR}/openCC
@@ -274,7 +277,7 @@ INSTALL_FE () {
 
     # GNU 4.2.0 based FE
     INSTALL_EXEC_SUB ${AREA}/wgen/wgen42 ${PHASEPATH}/wgen42
-    if [ "$ARCH" = "PPC32" ]; then
+    if [ "$TARG_HOST" = "ppc32" ]; then
     LIBEXEC=libexec/gcc/powerpc-redhat-linux/4.2.0
     else
     LIBEXEC=libexec/gcc/${PHASE_DIR_PREFIX}-redhat-linux/4.2.0

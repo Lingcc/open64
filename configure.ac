@@ -224,6 +224,8 @@ case "$host" in
 		CYGNUS_CONFIGURE_HOST=ia64-linux-gnu
 		GCC_CONFIGURE_HOST=ia64-redhat-linux
 		;;
+	powerpc-*-linux*)
+		;;
 	*)
 		AC_MSG_ERROR(["open64 is not supported on $target"])
 		;;
@@ -274,10 +276,7 @@ case "$target" in
 		;;
 	powerpc-*-linux*)
 		MACHINE_TYPE=PPC32
-		CROSS_TARGET="$target"
 		BUILD_ABI=I32BIT
-		BUILD_ARCH=IA32
-		BUILD_HOST=IA32
 		BUILD_TARGET=PPC32
 		BUILD_MULTILIB=NO
 		BUILD_VENDOR=OSP
@@ -285,9 +284,22 @@ case "$target" in
 		GCC_CONFIGURE_HOST=powerpc-redhat-linux
 		GCC_CONFIGURE_BUILD=powerpc-redhat-linux
 		CYGNUS_CONFIGURE_TARG=mipsel-elf-linux
-		GCC_CONFIGURE_CFLAGS+=" -DTARG_PPC32"
 		GCC_CONFIGURE_COMPILER+=" -m32"
-		;;
+		GCC_CONFIGURE_CFLAGS+=" -DTARG_PPC32"
+		case "$host" in
+			powerpc-*-linux*)
+				BUILD_ARCH=PPC32
+				BUILD_HOST=PPC32
+				BUILD_SKIP_IPA=YES
+				GCC_CONFIGURE_CFLAGS+=" -DTARG_PPC"
+			;;
+			*)
+				BUILD_SKIP_IPA=NO
+				BUILD_ARCH=IA32
+				BUILD_HOST=IA32
+				CROSS_TARGET="$target"
+			;;
+		esac ;;
 	sl*-*-linux*)
 		MACHINE_TYPE=SL
 		BUILD_TARGET=SL
@@ -315,7 +327,6 @@ fi
 if test "${BUILD_TARGET}" = "PPC32"; then
    BUILD_GNU3="NO"
    BUILD_FORTRAN="NO"
-   BUILD_SKIP_IPA="NO"
 fi
 
 UNAME_MACHINE=`uname -m`
